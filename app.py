@@ -698,14 +698,6 @@ def main():
     create_user()
     create_tables()
     
-    # Verificar se já está logado
-    if st.session_state.get('logged_in', False):
-        # Mostrar dashboard diretamente
-        dashboard_page()
-        return
-    
-    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-    
     # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
         st.session_state.logged_in = False
@@ -718,30 +710,34 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Se já está logado, ir direto para o dashboard
-    if st.session_state.logged_in:
+    # Verificar se já está logado
+    if st.session_state.get('logged_in', False):
+        # Mostrar dashboard diretamente
         dashboard_page()
         return
     
-    # Se não está logado, mostrar login
     st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-    login_page()
     
-    # Verificar se usuário tem informações completas
-    if st.session_state.user_info is None:
-       st.session_state.user_info = get_user_info(st.session_state.username)
-        
-    # Se não tem informações completas, redirecionar para completar cadastro
-    if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
-        complete_registration_page()
-        return
-        
-    if st.session_state.is_admin:
-        menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
+    # Navegação
+    if not st.session_state.logged_in:
+        login_page()
     else:
-        menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
-    
-    choice = st.sidebar.selectbox("Navegação", menu)
+        # Verificar se usuário tem informações completas
+        if st.session_state.user_info is None:
+            st.session_state.user_info = get_user_info(st.session_state.username)
+        
+        # Se não tem informações completas, redirecionar para completar cadastro
+        if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
+            complete_registration_page()
+            return
+        
+        # Menu de navegação
+        if st.session_state.is_admin:
+            menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
+        else:
+            menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
+            
+        choice = st.sidebar.selectbox("Navegação", menu)
         
         # Exibir página selecionada
         if choice == "Dashboard":
