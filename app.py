@@ -32,7 +32,7 @@ def rerun():
         st.rerun()
     except:
         try:
-            st.experimental_rerun()
+            st.rerun()
         except:
             # Fallback com JavaScript
             st.markdown("""
