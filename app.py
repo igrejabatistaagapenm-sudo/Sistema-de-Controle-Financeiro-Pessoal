@@ -710,16 +710,12 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Se já está logado, ir direto para o dashboard
-    if st.session_state.logged_in:
-        dashboard_page()
-        return
-    
-    # Se não está logado, mostrar login
-    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-    login_page()
-    
-    elif:
+    # Navegação principal
+    if not st.session_state.logged_in:
+        # Se não está logado, mostrar login
+        st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
+        login_page()
+    else:
         # VERIFICAR SE PRECISA COMPLETAR CADASTRO
         if st.session_state.user_info is None:
             st.session_state.user_info = get_user_info(st.session_state.username)
