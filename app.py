@@ -16,6 +16,7 @@ import re
 import tempfile
 import csv
 import os
+import time
 
 # Configuração da página
 st.set_page_config(
@@ -148,12 +149,14 @@ def login_user(username, password):
 def get_user_info(username):
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
-    c.execute('SELECT nome_completo, cpf_cnpj, tipo_pessoa FROM userstable WHERE username = ?', (username,))
-    data = c.fetchone()
-    conn.close()
-    return data
-    except sqlite3.OperationalError:
+    try:
+        c.execute('SELECT nome_completo, cpf_cnpj, tipo_pessoa FROM userstable WHERE username = ?', (username,))
+        data = c.fetchone()
+        conn.close()
+        return data
+    except sqlite3.OperationalError as e:
         # Se a tabela não existir, retorna None
+        conn.close()
         return None
 
 def update_user_info(username, nome_completo, cpf_cnpj, tipo_pessoa):
@@ -768,8 +771,13 @@ def login_page():
     if st.button("Entrar"):
         hashed_pswd = make_hashes(password)
         
+        # Verificar credenciais corretamente
+        conn = sqlite3.connect('finance.db')
+        c = conn.cursor()
         try:
-            result = login_user(username, hashed_pswd)
+            c.execute('SELECT * FROM userstable WHERE username =? AND password = ?', (username, hashed_pswd))
+            result = c.fetchall()
+            conn.close()
             
             if result:
                 st.session_state.logged_in = True
@@ -783,10 +791,12 @@ def login_page():
                 
         except sqlite3.OperationalError:
             # Banco não inicializado corretamente
-            st.error("Sistema em inicialização. Tente novamente em alguns segundos.")
+            conn.close()
+            st.error("Sistema em inicialização. Recarregando...")
             # Force a criação das tabelas
             create_user()
             create_tables()
+            time.sleep(2)
             rerun()
 
 # Página de completar cadastro
