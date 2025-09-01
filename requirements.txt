@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 streamlit>=1.28.0
 pandas>=2.2.0
 numpy>=1.26.0
@@ -7,3 +8,14 @@ openpyxl>=3.1.0
 xlsxwriter>=3.1.0
 fpdf2>=4.6.0
 python-dateutil>=2.8.0
+=======
+streamlit==1.28.0
+pandas==2.1.3
+numpy==1.26.0
+plotly==5.18.0
+Pillow==10.1.0
+openpyxl==3.1.2
+xlsxwriter==3.1.2
+fpdf==1.7.2
+python-dateutil==2.8.2
+>>>>>>> becfa71ef19bd6dfce822a516e7562d03c9e56ec
