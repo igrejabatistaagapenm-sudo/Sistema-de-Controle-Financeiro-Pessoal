@@ -1,20 +1,4 @@
 # finance_app.py
-import os
-
-# Verifica se está no Streamlit Cloud
-IS_STREAMLIT_CLOUD = os.environ.get('STREAMLIT_SERVER_IS_CLOUD') == 'true'
-
-# Na função process_image_with_ocr:
-def process_image_with_ocr(image):
-    if IS_STREAMLIT_CLOUD:
-        return "OCR não disponível no Streamlit Cloud"
-    try:
-        import pytesseract
-        from PIL import Image
-        # ... resto do código
-    except ImportError:
-        return "OCR não disponível"
-        
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -25,15 +9,12 @@ from plotly.subplots import make_subplots
 import io
 import base64
 from PIL import Image
-#import pytesseract
-from pathlib import Path
 import sqlite3
 import hashlib
 import json
 import re
 import tempfile
-from fpdf import FPDF  # fpdf2 mantém a mesma interface
-import matplotlib.pyplot as plt
+import csv
 
 # Configuração da página
 st.set_page_config(
@@ -189,48 +170,6 @@ def delete_income(id, user_id):
     conn.commit()
     conn.close()
 
-# Função para processar OCR (requer Tesseract instalado)
-def process_image_with_ocr(image):
-    try:
-        # Salvar imagem temporariamente
-        image_path = "temp_image.png"
-        image.save(image_path)
-        
-        # Processar com OCR
-        text = pytesseract.image_to_string(Image.open(image_path), lang='por')
-        return text
-    except:
-        return "Erro ao processar imagem. Certifique-se de que o Tesseract está instalado."
-
-# Função para extrair valor do texto
-def extract_value_from_text(text):
-    patterns = [
-        r'R\s*[\$\s]*\s*(\d+[\.,]\d{2})',
-        r'valor\s*[\:\s]*\s*(\d+[\.,]\d{2})',
-        r'total\s*[\:\s]*\s*(\d+[\.,]\d{2})',
-        r'(\d+[\.,]\d{2})'
-    ]
-    
-    max_value = 0
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        if matches:
-            for match in matches:
-                if isinstance(match, tuple):
-                    match = match[0]
-                
-                clean_value = re.sub(r'[^\d,.]', '', match)
-                try:
-                    numeric_value = float(clean_value.replace(',', '.'))
-                    
-                    if not np.isnan(numeric_value) and numeric_value > max_value and numeric_value < 10000:
-                        max_value = numeric_value
-                except:
-                    continue
-    
-    return max_value
-
 # Função para exportar dados para Excel
 def export_to_excel(expenses, incomes):
     # Criar DataFrames
@@ -331,8 +270,8 @@ def format_brazilian_date(date_str):
     except:
         return date_str
 
-# Função para exportar relatório em PDF
-def export_to_pdf(expenses, incomes, filters=None):
+# Função alternativa para exportar relatório em PDF (usando HTML/CSS)
+def export_to_pdf_alternative(expenses, incomes, filters=None):
     # Criar DataFrames
     expense_df = pd.DataFrame(expenses, columns=['ID', 'Data', 'Origem', 'Valor', 'Categoria', 'UserID']) if expenses else pd.DataFrame()
     income_df = pd.DataFrame(incomes, columns=['ID', 'Data', 'Tipo', 'Descrição', 'Valor', 'UserID']) if incomes else pd.DataFrame()
@@ -348,119 +287,97 @@ def export_to_pdf(expenses, incomes, filters=None):
     total_income = income_df['Valor'].sum() if not income_df.empty else 0
     balance = total_income - total_expenses
     
-    # Criar PDF
-    pdf = FPDF()
-    pdf.add_page()
+    # Criar conteúdo HTML para o PDF
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Relatório Financeiro</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            h1 {{ color: #2c3e50; text-align: center; }}
+            h2 {{ color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
+            .summary {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+            .metric {{ margin: 10px 0; }}
+            .positive {{ color: #27ae60; font-weight: bold; }}
+            .negative {{ color: #e74c3c; font-weight: bold; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+            th, td {{ padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }}
+            th {{ background-color: #3498db; color: white; }}
+            tr:hover {{ background-color: #f5f5f5; }}
+            .footer {{ margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <h1>💰 Relatório Financeiro</h1>
+        
+        <div class="summary">
+            <h2>Resumo</h2>
+            <div class="metric">Usuário: {st.session_state.username}</div>
+            <div class="metric">Data do relatório: {datetime.now().strftime('%d/%m/%Y %H:%M')}</div>
+            <div class="metric">Total de Receitas: R$ {total_income:,.2f}</div>
+            <div class="metric">Total de Despesas: R$ {total_expenses:,.2f}</div>
+            <div class="metric">Saldo: <span class="{ 'positive' if balance >= 0 else 'negative' }">R$ {balance:,.2f}</span></div>
+        </div>
+    """
     
-    # Configurar fonte
-    pdf.set_font("Arial", 'B', 16)
-    
-    # Título
-    pdf.cell(0, 10, "Relatório Financeiro", 0, 1, 'C')
-    pdf.ln(5)
-    
-    # Informações do relatório
-    pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, f"Usuário: {st.session_state.username}", 0, 1)
-    pdf.cell(0, 10, f"Data do relatório: {datetime.now().strftime('%d/%m/%Y %H:%M')}", 0, 1)
-    
-    if filters:
-        pdf.cell(0, 10, f"Filtros aplicados: {filters}", 0, 1)
-    
-    pdf.ln(5)
-    
-    # Resumo financeiro
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "Resumo Financeiro", 0, 1)
-    pdf.set_font("Arial", '', 12)
-    
-    pdf.cell(0, 10, f"Total de Receitas: R$ {total_income:,.2f}", 0, 1)
-    pdf.cell(0, 10, f"Total de Despesas: R$ {total_expenses:,.2f}", 0, 1)
-    
-    # Definir cor para o saldo (verde para positivo, vermelho para negativo)
-    if balance >= 0:
-        pdf.set_text_color(0, 128, 0)  # Verde
-    else:
-        pdf.set_text_color(255, 0, 0)  # Vermelho
-    
-    pdf.cell(0, 10, f"Saldo: R$ {balance:,.2f}", 0, 1)
-    pdf.set_text_color(0, 0, 0)  # Voltar para preto
-    
-    pdf.ln(5)
-    
-    # Detalhes das despesas
+    # Adicionar despesas
     if not expense_df.empty:
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Despesas", 0, 1)
-        pdf.set_font("Arial", '', 10)
-        
-        # Cabeçalho da tabela
-        pdf.cell(40, 10, "Data", 1)
-        pdf.cell(60, 10, "Origem", 1)
-        pdf.cell(40, 10, "Categoria", 1)
-        pdf.cell(40, 10, "Valor (R$)", 1)
-        pdf.ln()
-        
-        # Dados das despesas
+        html_content += """
+        <h2>Despesas</h2>
+        <table>
+            <tr>
+                <th>Data</th>
+                <th>Origem</th>
+                <th>Categoria</th>
+                <th>Valor (R$)</th>
+            </tr>
+        """
         for _, row in expense_df.iterrows():
-            pdf.cell(40, 10, str(row['Data']), 1)
-            pdf.cell(60, 10, str(row['Origem'])[:30], 1)  # Limitar tamanho
-            pdf.cell(40, 10, str(row['Categoria']), 1)
-            pdf.cell(40, 10, f"{row['Valor']:,.2f}", 1)
-            pdf.ln()
-        
-        pdf.ln(5)
+            html_content += f"""
+            <tr>
+                <td>{row['Data']}</td>
+                <td>{row['Origem']}</td>
+                <td>{row['Categoria']}</td>
+                <td>{row['Valor']:,.2f}</td>
+            </tr>
+            """
+        html_content += "</table>"
     
-    # Detalhes das receitas
+    # Adicionar receitas
     if not income_df.empty:
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Receitas", 0, 1)
-        pdf.set_font("Arial", '', 10)
-        
-        # Cabeçalho da tabela
-        pdf.cell(40, 10, "Data", 1)
-        pdf.cell(60, 10, "Tipo", 1)
-        pdf.cell(60, 10, "Descrição", 1)
-        pdf.cell(40, 10, "Valor (R$)", 1)
-        pdf.ln()
-        
-        # Dados das receitas
+        html_content += """
+        <h2>Receitas</h2>
+        <table>
+            <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Valor (R$)</th>
+            </tr>
+        """
         for _, row in income_df.iterrows():
-            pdf.cell(40, 10, str(row['Data']), 1)
-            pdf.cell(60, 10, str(row['Tipo']), 1)
-            pdf.cell(60, 10, str(row['Descrição'])[:30], 1)  # Limitar tamanho
-            pdf.cell(40, 10, f"{row['Valor']:,.2f}", 1)
-            pdf.ln()
+            html_content += f"""
+            <tr>
+                <td>{row['Data']}</td>
+                <td>{row['Tipo']}</td>
+                <td>{row['Descrição']}</td>
+                <td>{row['Valor']:,.2f}</td>
+            </tr>
+            """
+        html_content += "</table>"
     
-    # Adicionar página de gráficos se houver dados
-    if not expense_df.empty or not income_df.empty:
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Gráficos e Estatísticas", 0, 1)
-        
-        # Criar gráficos simples (seriam melhores com matplotlib)
-        pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 10, "Distribuição de Despesas por Categoria", 0, 1)
-        
-        if not expense_df.empty:
-            expense_by_category = expense_df.groupby('Categoria')['Valor'].sum()
-            for category, value in expense_by_category.items():
-                pdf.cell(0, 10, f"{category}: R$ {value:,.2f} ({value/total_expenses*100:.1f}%)", 0, 1)
-        
-        pdf.ln(5)
-        pdf.cell(0, 10, "Distribuição de Receitas por Tipo", 0, 1)
-        
-        if not income_df.empty:
-            income_by_type = income_df.groupby('Tipo')['Valor'].sum()
-            for type_, value in income_by_type.items():
-                pdf.cell(0, 10, f"{type_}: R$ {value:,.2f} ({value/total_income*100:.1f}%)", 0, 1)
+    html_content += """
+        <div class="footer">
+            Relatório gerado em """ + datetime.now().strftime('%d/%m/%Y %H:%M') + """ | Sistema de Controle Financeiro
+        </div>
+    </body>
+    </html>
+    """
     
-    # Salvar PDF em buffer
-    pdf_output = io.BytesIO()
-    pdf_output.write(pdf.output(dest='S').encode('latin1'))
-    pdf_output.seek(0)
-    
-    return pdf_output
+    # Retornar o conteúdo HTML para download
+    return html_content
 
 # Interface principal da aplicação
 def main():
@@ -772,28 +689,13 @@ def expenses_page():
                 ["Alimentação", "Combustível", "Transporte", "Moradia", "Outros"]
             )
             
-            # Upload de imagem para OCR
-            uploaded_image = st.file_uploader("Upload de cupom fiscal (OCR)", type=['png', 'jpg', 'jpeg'])
+            # Upload de imagem (sem OCR)
+            uploaded_image = st.file_uploader("Upload de comprovante (opcional)", type=['png', 'jpg', 'jpeg'])
             
             if uploaded_image is not None:
                 image = Image.open(uploaded_image)
-                st.image(image, caption="Imagem do cupom", use_column_width=True)
-                
-                if st.button("Extrair texto da imagem"):
-                    with st.spinner("Processando imagem..."):
-                        text = process_image_with_ocr(image)
-                        st.text_area("Texto extraído", text, height=150)
-                        
-                        # Tentar extrair valor
-                        value = extract_value_from_text(text)
-                        if value > 0:
-                            st.success(f"Valor extraído: R$ {value:.2f}")
-                            # Atualizar o valor no campo usando session state
-                            st.session_state.extracted_expense_value = value
-        
-        # Usar valor extraído se disponível
-        if 'extracted_expense_value' in st.session_state:
-            expense_value = st.session_state.extracted_expense_value
+                st.image(image, caption="Imagem do comprovante", use_column_width=True)
+                st.info("Funcionalidade de OCR não disponível no momento")
         
         if st.button("Adicionar Despesa"):
             # Validar e converter data
@@ -814,9 +716,6 @@ def expenses_page():
                     st.session_state.username
                 )
                 st.success("Despesa adicionada com sucesso!")
-                # Limpar valor extraído da sessão
-                if 'extracted_expense_value' in st.session_state:
-                    del st.session_state.extracted_expense_value
                 rerun()
             else:
                 st.error("Preencha todos os campos obrigatórios")
@@ -1104,8 +1003,8 @@ def reports_page():
             )
     
     with col3:
-        # Exportar para PDF
-        if st.button("📄 Exportar para PDF"):
+        # Exportar para HTML (alternativa para PDF)
+        if st.button("📄 Exportar para HTML"):
             # Criar descrição dos filtros aplicados
             filters_desc = []
             if year != "Todos":
@@ -1117,12 +1016,12 @@ def reports_page():
             
             filters_text = ", ".join(filters_desc) if filters_desc else "Todos os dados"
             
-            pdf_file = export_to_pdf(expenses, incomes, filters_text)
+            html_content = export_to_pdf_alternative(expenses, incomes, filters_text)
             st.download_button(
-                label="⬇️ Baixar arquivo PDF",
-                data=pdf_file,
-                file_name="relatorio_financeiro.pdf",
-                mime="application/pdf"
+                label="⬇️ Baixar arquivo HTML",
+                data=html_content,
+                file_name="relatorio_financeiro.html",
+                mime="text/html"
             )
 
 # Página de configurações
