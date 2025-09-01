@@ -118,18 +118,8 @@ def check_hashes(password, hashed_text):
 def create_user():
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS userstable(
-            username TEXT PRIMARY KEY, 
-            password TEXT,
-            nome_completo TEXT,
-            cpf_cnpj TEXT,
-            tipo_pessoa TEXT,
-            data_cadastro TEXT
-        )
-    ''')
     
-    # Verificar se o usuário admin já existe
+    # APENAS verificar/criar usuário admin
     c.execute('SELECT * FROM userstable WHERE username = "admin"')
     if not c.fetchone():
         # Criar usuário admin padrão
@@ -162,6 +152,9 @@ def get_user_info(username):
     data = c.fetchone()
     conn.close()
     return data
+    except sqlite3.OperationalError:
+        # Se a tabela não existir, retorna None
+        return None
 
 def update_user_info(username, nome_completo, cpf_cnpj, tipo_pessoa):
     conn = sqlite3.connect('finance.db')
@@ -698,6 +691,13 @@ def import_from_spreadsheet(file, user_id, is_income=False):
 
 # Interface principal da aplicação
 def main():
+    # FORÇAR CRIAÇÃO DO BANCO PRIMEIRO
+    import time
+    time.sleep(1)  # Pequeno delay para garantir inicialização
+    
+    create_user()
+    create_tables()
+    
     st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
     
     # Inicializar estado da sessão
@@ -768,22 +768,26 @@ def login_page():
     if st.button("Entrar"):
         hashed_pswd = make_hashes(password)
         
-        # Verificar credenciais corretamente
-        conn = sqlite3.connect('finance.db')
-        c = conn.cursor()
-        c.execute('SELECT * FROM userstable WHERE username =? AND password = ?', (username, hashed_pswd))
-        result = c.fetchall()
-        conn.close()
-        
-        if result:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.is_admin = (username == "admin")
-            st.session_state.user_info = get_user_info(username)
-            st.success("Login realizado com sucesso!")
+        try:
+            result = login_user(username, hashed_pswd)
+            
+            if result:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.session_state.is_admin = (username == "admin")
+                st.session_state.user_info = get_user_info(username)
+                st.success("Login realizado com sucesso!")
+                rerun()
+            else:
+                st.error("Usuário ou senha incorretos")
+                
+        except sqlite3.OperationalError:
+            # Banco não inicializado corretamente
+            st.error("Sistema em inicialização. Tente novamente em alguns segundos.")
+            # Force a criação das tabelas
+            create_user()
+            create_tables()
             rerun()
-        else:
-            st.error("Usuário ou senha incorretos")
 
 # Página de completar cadastro
 def complete_registration_page():
