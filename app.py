@@ -694,16 +694,18 @@ def import_from_spreadsheet(file, user_id, is_income=False):
 
 # Interface principal da aplicação
 def main():
-    # FORÇAR CRIAÇÃO DO BANCO PRIMEIRO
-    import time
-    time.sleep(1)  # Pequeno delay para garantir inicialização
-    
+    # Inicializar banco primeiro
     create_user()
     create_tables()
     
+    # Verificar se já está logado
+    if st.session_state.get('logged_in', False):
+        # Mostrar dashboard diretamente
+        dashboard_page()
+        return
+    
     st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
     
-    # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
         st.session_state.logged_in = False
     if 'username' not in st.session_state:
@@ -715,10 +717,15 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Navegação
-    if not st.session_state.logged_in:
-        login_page()
-    else:
+    # Se já está logado, ir direto para o dashboard
+    if st.session_state.logged_in:
+        dashboard_page()
+        return
+    
+    # Se não está logado, mostrar login
+    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
+    login_page()
+    
         # Verificar se usuário tem informações completas
         if st.session_state.user_info is None:
             st.session_state.user_info = get_user_info(st.session_state.username)
@@ -771,7 +778,7 @@ def login_page():
     if st.button("Entrar"):
         hashed_pswd = make_hashes(password)
         
-        # Verificar credenciais corretamente
+        # Verificar credenciais
         conn = sqlite3.connect('finance.db')
         c = conn.cursor()
         try:
@@ -785,19 +792,18 @@ def login_page():
                 st.session_state.is_admin = (username == "admin")
                 st.session_state.user_info = get_user_info(username)
                 st.success("Login realizado com sucesso!")
+                
+                # Forçar redirecionamento manual
+                st.markdown("<script>window.location.reload()</script>", unsafe_allow_html=True)
+                time.sleep(0.5)
                 rerun()
+                
             else:
                 st.error("Usuário ou senha incorretos")
                 
         except sqlite3.OperationalError:
-            # Banco não inicializado corretamente
             conn.close()
-            st.error("Sistema em inicialização. Recarregando...")
-            # Force a criação das tabelas
-            create_user()
-            create_tables()
-            time.sleep(2)
-            rerun()
+            st.error("Erro no banco de dados. Tente novamente.")
 
 # Página de completar cadastro
 def complete_registration_page():
