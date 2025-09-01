@@ -719,7 +719,7 @@ def main():
     st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
     login_page()
     
-    else if:
+    elif:
         # VERIFICAR SE PRECISA COMPLETAR CADASTRO
         if st.session_state.user_info is None:
             st.session_state.user_info = get_user_info(st.session_state.username)
