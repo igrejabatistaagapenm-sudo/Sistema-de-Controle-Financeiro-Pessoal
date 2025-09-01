@@ -737,11 +737,11 @@ def main():
         return
         
     if st.session_state.is_admin:
-    menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
-else:
-    menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
+        menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
+    else:
+        menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
     
-choice = st.sidebar.selectbox("Navegação", menu)
+    choice = st.sidebar.selectbox("Navegação", menu)
         
         # Exibir página selecionada
         if choice == "Dashboard":
