@@ -1,4 +1,20 @@
 # finance_app.py
+import os
+
+# Verifica se está no Streamlit Cloud
+IS_STREAMLIT_CLOUD = os.environ.get('STREAMLIT_SERVER_IS_CLOUD') == 'true'
+
+# Na função process_image_with_ocr:
+def process_image_with_ocr(image):
+    if IS_STREAMLIT_CLOUD:
+        return "OCR não disponível no Streamlit Cloud"
+    try:
+        import pytesseract
+        from PIL import Image
+        # ... resto do código
+    except ImportError:
+        return "OCR não disponível"
+        
 import streamlit as st
 import pandas as pd
 import numpy as np
