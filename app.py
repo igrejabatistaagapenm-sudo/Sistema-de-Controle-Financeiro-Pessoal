@@ -25,7 +25,7 @@ from plotly.subplots import make_subplots
 import io
 import base64
 from PIL import Image
-import pytesseract
+#import pytesseract
 from pathlib import Path
 import sqlite3
 import hashlib
