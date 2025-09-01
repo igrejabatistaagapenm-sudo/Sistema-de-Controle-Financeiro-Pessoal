@@ -32,9 +32,16 @@ def rerun():
         st.rerun()
     except:
         try:
-            st.rerun()
+            st.experimental_rerun()
         except:
-            pass
+            # Fallback com JavaScript
+            st.markdown("""
+                <script>
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 100);
+                </script>
+            """, unsafe_allow_html=True)
 
 # Funções de validação de CPF/CNPJ
 def validate_cpf(cpf):
