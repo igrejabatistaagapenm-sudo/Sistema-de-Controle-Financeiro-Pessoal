@@ -694,7 +694,7 @@ def import_from_spreadsheet(file, user_id, is_income=False):
 
 # Interface principal da aplicação
 def main():
-    # Inicializar banco primeiro
+    # Inicializar banco
     create_user()
     create_tables()
     
@@ -710,11 +710,15 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Navegação principal
-    if not st.session_state.logged_in:
-        # MOSTRAR LOGIN (com título)
-        st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-        login_page()
+    # Se já está logado, ir direto para o dashboard
+    if st.session_state.logged_in:
+        dashboard_page()
+        return
+    
+    # Se não está logado, mostrar login
+    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
+    login_page()
+    
     else:
         # VERIFICAR SE PRECISA COMPLETAR CADASTRO
         if st.session_state.user_info is None:
