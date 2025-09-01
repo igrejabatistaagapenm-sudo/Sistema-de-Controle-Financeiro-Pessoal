@@ -710,28 +710,21 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Verificar se já está logado
-    if st.session_state.get('logged_in', False):
-        # Mostrar dashboard diretamente
-        dashboard_page()
-        return
-    
-    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-    
-    # Navegação
+    # Navegação principal
     if not st.session_state.logged_in:
+        # MOSTRAR LOGIN (com título)
+        st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
         login_page()
     else:
-        # Verificar se usuário tem informações completas
+        # VERIFICAR SE PRECISA COMPLETAR CADASTRO
         if st.session_state.user_info is None:
             st.session_state.user_info = get_user_info(st.session_state.username)
         
-        # Se não tem informações completas, redirecionar para completar cadastro
         if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
             complete_registration_page()
             return
         
-        # Menu de navegação
+        # MOSTRAR MENU E PÁGINAS (SEM TÍTULO AQUI, CADA PÁGINA TEM SEU PRÓPRIO)
         if st.session_state.is_admin:
             menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
         else:
