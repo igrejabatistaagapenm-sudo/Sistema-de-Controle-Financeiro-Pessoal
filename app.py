@@ -731,16 +731,16 @@ def main():
     if st.session_state.user_info is None:
        st.session_state.user_info = get_user_info(st.session_state.username)
         
-        # Se não tem informações completas, redirecionar para completar cadastro
-        if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
-            complete_registration_page()
-            return
+    # Se não tem informações completas, redirecionar para completar cadastro
+    if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
+        complete_registration_page()
+        return
         
-        # Menu de navegação
-        if st.session_state.is_admin:
-            menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
+    # Menu de navegação
+    if st.session_state.is_admin:
+        menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
         else:
-            menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
+        menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]    
             
         choice = st.sidebar.selectbox("Navegação", menu)
         
