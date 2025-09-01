@@ -31,7 +31,7 @@ def rerun():
         st.rerun()
     except:
         try:
-            st.experimental_rerun()
+            st.rerun()
         except:
             pass
 
@@ -190,6 +190,18 @@ def create_tables():
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
     
+    # Tabela de usuários (se não existir)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS userstable (
+            username TEXT PRIMARY KEY, 
+            password TEXT,
+            nome_completo TEXT,
+            cpf_cnpj TEXT,
+            tipo_pessoa TEXT,
+            data_cadastro TEXT
+        )
+    ''')
+    
     # Tabela de despesas
     c.execute('''
         CREATE TABLE IF NOT EXISTS expenses (
@@ -217,6 +229,13 @@ def create_tables():
             tipo_pessoa TEXT
         )
     ''')
+    
+    # VERIFICAR E CRIAR USUÁRIO ADMIN SE NÃO EXISTIR
+    c.execute('SELECT * FROM userstable WHERE username = "admin"')
+    if not c.fetchone():
+        # Criar usuário admin padrão
+        c.execute('INSERT INTO userstable(username, password, nome_completo, data_cadastro) VALUES (?, ?, ?, ?)', 
+                 ('admin', make_hashes('1234'), 'Administrador', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     
     conn.commit()
     conn.close()
