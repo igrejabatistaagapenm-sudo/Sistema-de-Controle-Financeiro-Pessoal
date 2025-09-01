@@ -16,7 +16,7 @@ import hashlib
 import json
 import re
 import tempfile
-from fpdf import FPDF
+from fpdf import FPDF  # fpdf2 mantém a mesma interface
 import matplotlib.pyplot as plt
 
 # Configuração da página
