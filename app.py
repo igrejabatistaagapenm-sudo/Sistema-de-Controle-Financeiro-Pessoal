@@ -1735,9 +1735,9 @@ if contrib_tipo != "Não informar":
 
 # Página de despesas - CORRIGIDA com autocompletar
 def expenses_page():
-     if not st.session_state.logged_in:
+    if not st.session_state.logged_in:
         return
-        
+    
     st.header("💸 Gestão de Despesas")
     
     # Formulário para adicionar despesa
@@ -1755,57 +1755,54 @@ def expenses_page():
             expense_category = st.selectbox("Categoria*", 
                                           ["Alimentação", "Transporte", "Utilidades", "Manutenção", 
                                            "Eventos", "Equipamentos", "Outros"])
-   
-        # Informações do fornecedor (opcional) - COM AUTOCOMPLETAR
-st.subheader("Informações do Fornecedor (Opcional)")
-supplier_tipo = st.radio("Tipo de Fornecedor", ["Física", "Jurídica", "Não informar"], index=2)
-
-if supplier_tipo != "Não informar":
-    col3, col4 = st.columns(2)
-    with col3:
-        # Buscar CPF/CNPJ cadastrados para autocompletar
-        cpf_cnpj_cadastrados = get_all_cpf_cnpj()
-        opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
         
-        if supplier_tipo == "Física":
-            cpf_selecionado = st.selectbox("CPF do Fornecedor", 
-                                         [""] + opcoes_cpf_cnpj,
-                                         format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-            
-            if cpf_selecionado:
-                supplier_cpf = st.text_input("CPF (editar se necessário)", 
-                                           value=cpf_selecionado,
-                                           placeholder="000.000.000-00")
-                # Auto-preencher o nome se CPF foi selecionado
-                supplier_name = st.text_input("Nome do Fornecedor", 
-                                            value=cpf_cnpj_cadastrados.get(cpf_selecionado, ""),
-                                            placeholder="Nome completo")
-            else:
-                supplier_cpf = st.text_input("CPF do Fornecedor", 
-                                           placeholder="000.000.000-00")
-                supplier_name = st.text_input("Nome do Fornecedor", placeholder="Nome completo")
-            supplier_identifier = supplier_cpf
-        else:
-            cnpj_selecionado = st.selectbox("CNPJ do Fornecedor", 
-                                          [""] + opcoes_cpf_cnpj,
-                                          format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-            
-            if cnpj_selecionado:
-                supplier_cnpj = st.text_input("CNPJ (editar se necessário)", 
-                                            value=cnpj_selecionado,
-                                            placeholder="00.000.000/0000-00")
-                # Auto-preencher o nome se CNPJ foi selecionado
-                supplier_name = st.text_input("Nome/Razão Social", 
-                                            value=cpf_cnpj_cadastrados.get(cnpj_selecionado, ""),
-                                            placeholder="Razão social")
-            else:
-                supplier_cnpj = st.text_input("CNPJ do Fornecedor", 
-                                            placeholder="00.000.000/0000-00")
-                supplier_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
-            supplier_identifier = supplier_cnpj
-            
-            with col4:
-                supplier_name = st.text_input("Nome do Fornecedor", placeholder="Nome completo ou razão social")
+        # Informações do fornecedor (opcional) - COM AUTOCOMPLETAR
+        st.subheader("Informações do Fornecedor (Opcional)")
+        supplier_tipo = st.radio("Tipo de Fornecedor", ["Física", "Jurídica", "Não informar"], index=2)
+        
+        if supplier_tipo != "Não informar":
+            col3, col4 = st.columns(2)
+            with col3:
+                # Buscar CPF/CNPJ cadastrados para autocompletar
+                cpf_cnpj_cadastrados = get_all_cpf_cnpj()
+                opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
+                
+                if supplier_tipo == "Física":
+                    cpf_selecionado = st.selectbox("CPF do Fornecedor", 
+                                                 [""] + opcoes_cpf_cnpj,
+                                                 format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+                    
+                    if cpf_selecionado:
+                        supplier_cpf = st.text_input("CPF (editar se necessário)", 
+                                                   value=cpf_selecionado,
+                                                   placeholder="000.000.000-00")
+                        # Auto-preencher o nome se CPF foi selecionado
+                        supplier_name = st.text_input("Nome do Fornecedor", 
+                                                    value=cpf_cnpj_cadastrados.get(cpf_selecionado, ""),
+                                                    placeholder="Nome completo")
+                    else:
+                        supplier_cpf = st.text_input("CPF do Fornecedor", 
+                                                   placeholder="000.000.000-00")
+                        supplier_name = st.text_input("Nome do Fornecedor", placeholder="Nome completo")
+                    supplier_identifier = supplier_cpf
+                else:
+                    cnpj_selecionado = st.selectbox("CNPJ do Fornecedor", 
+                                                  [""] + opcoes_cpf_cnpj,
+                                                  format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+                    
+                    if cnpj_selecionado:
+                        supplier_cnpj = st.text_input("CNPJ (editar se necessário)", 
+                                                    value=cnpj_selecionado,
+                                                    placeholder="00.000.000/0000-00")
+                        # Auto-preencher o nome se CNPJ foi selecionado
+                        supplier_name = st.text_input("Nome/Razão Social", 
+                                                    value=cpf_cnpj_cadastrados.get(cnpj_selecionado, ""),
+                                                    placeholder="Razão social")
+                    else:
+                        supplier_cnpj = st.text_input("CNPJ do Fornecedor", 
+                                                    placeholder="00.000.000/0000-00")
+                        supplier_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
+                    supplier_identifier = supplier_cnpj
         
         if st.form_submit_button("Adicionar Despesa"):
             if expense_value and expense_origin:
@@ -1839,7 +1836,7 @@ if supplier_tipo != "Não informar":
                     tipo_pessoa
                 )
                 st.success("Despesa adicionada com sucesso!")
-                rerun()
+                st.rerun()
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
     
@@ -1867,7 +1864,7 @@ if supplier_tipo != "Não informar":
         expense_df = pd.DataFrame(expense_data)
         
         # Exibir tabela com opção de remover
-        edited_df = st.dataframe(expense_df, use_container_width=True, hide_index=True)
+        st.dataframe(expense_df, use_container_width=True, hide_index=True)
         
         # Opção para remover despesa
         expense_to_delete = st.selectbox("Selecionar despesa para remover", 
@@ -1880,12 +1877,10 @@ if supplier_tipo != "Não informar":
                 expense_id = int(expense_to_delete.split(" - ")[0])
                 delete_expense(expense_id, st.session_state.username)
                 st.success("Despesa removida com sucesso!")
-                rerun()
+                st.rerun()
     else:
         st.info("Nenhuma despesa cadastrada.")
-        
-        
-
+ 
 # Página de dashboard
 def dashboard_page():
     st.header("📊 Dashboard Financeiro")
