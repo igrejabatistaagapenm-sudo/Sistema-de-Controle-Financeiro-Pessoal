@@ -18,6 +18,32 @@ import csv
 import os
 import time
 
+# Funções para formatar data no formato brasileiro
+def format_date_to_br(date_obj):
+    """Converte objeto date para string no formato dd/mm/aaaa"""
+    if isinstance(date_obj, dt_date):
+        return date_obj.strftime("%d/%m/%Y")
+    return date_obj
+
+def format_date_to_db(date_str):
+    """Converte string no formato dd/mm/aaaa para aaaa-mm-dd (formato do banco)"""
+    try:
+        if isinstance(date_str, str) and len(date_str) == 10 and date_str[2] == '/':
+            parts = date_str.split('/')
+            if len(parts) == 3:
+                return f"{parts[2]}-{parts[1]}-{parts[0]}"
+        return date_str
+    except:
+        return date_str
+
+def parse_date_input(date_input):
+    """Converte input de data para formato do banco"""
+    if isinstance(date_input, dt_date):
+        return date_input.strftime("%Y-%m-%d")
+    elif isinstance(date_input, str):
+        return format_date_to_db(date_input)
+    return date_input
+
 # Configuração da página
 st.set_page_config(
     page_title="Sistema de Controle Financeiro - Igreja Batista Ágape",
@@ -585,6 +611,9 @@ def format_brazilian_date(date_str):
             parts = date_str.split('-')
             if len(parts) == 3:
                 return f"{parts[2]}/{parts[1]}/{parts[0]}"
+        # Se já estiver no formato brasileiro, retornar como está
+        elif isinstance(date_str, str) and len(date_str) == 10 and date_str[2] == '/':
+            return date_str
         return date_str
     except:
         return date_str
@@ -1012,7 +1041,8 @@ def show_expense_form():
         col1, col2 = st.columns(2)
         
         with col1:
-            expense_date = st.date_input("Data*", value=dt_date.today())
+            # Data no formato brasileiro
+            expense_date = st.date_input("Data*", value=dt_date.today(), format="DD/MM/YYYY")
             origin = st.text_input("Origem/Descrição*")
             value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
         
@@ -1040,10 +1070,13 @@ def show_expense_form():
         if submitted:
             if origin and value > 0:
                 try:
+                    # Converter data para formato do banco
+                    db_date = parse_date_input(expense_date)
+                    
                     # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
                     if tipo_pessoa == "Não informar":
                         add_expense(
-                            expense_date.strftime("%Y-%m-%d"),
+                            db_date,
                             origin,
                             value,
                             category,
@@ -1056,7 +1089,7 @@ def show_expense_form():
                         if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
                            (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj_clean)):
                             add_expense(
-                                expense_date.strftime("%Y-%m-%d"),
+                                db_date,
                                 origin,
                                 value,
                                 category,
@@ -1067,7 +1100,7 @@ def show_expense_form():
                         else:
                             st.error("CPF/CNPJ inválido. A despesa será cadastrada sem informações do fornecedor.")
                             add_expense(
-                                expense_date.strftime("%Y-%m-%d"),
+                                db_date,
                                 origin,
                                 value,
                                 category,
@@ -1096,7 +1129,8 @@ def show_income_form():
         col1, col2 = st.columns(2)
         
         with col1:
-            income_date = st.date_input("Data*", value=dt_date.today())
+            # Data no formato brasileiro
+            income_date = st.date_input("Data*", value=dt_date.today(), format="DD/MM/YYYY")
             type_income = st.selectbox("Tipo de Receita*", 
                                      ["Dízimo", "Oferta", "Doação", "Evento", "Outros"])
             value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
@@ -1124,10 +1158,13 @@ def show_income_form():
         if submitted:
             if description and value > 0:
                 try:
+                    # Converter data para formato do banco
+                    db_date = parse_date_input(income_date)
+                    
                     # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
                     if tipo_pessoa == "Não informar":
                         add_income(
-                            income_date.strftime("%Y-%m-%d"),
+                            db_date,
                             type_income,
                             description,
                             value,
@@ -1140,7 +1177,7 @@ def show_income_form():
                         if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
                            (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj_clean)):
                             add_income(
-                                income_date.strftime("%Y-%m-%d"),
+                                db_date,
                                 type_income,
                                 description,
                                 value,
@@ -1151,7 +1188,7 @@ def show_income_form():
                         else:
                             st.error("CPF/CNPJ inválido. A receita será cadastrada sem informações do doador.")
                             add_income(
-                                income_date.strftime("%Y-%m-%d"),
+                                db_date,
                                 type_income,
                                 description,
                                 value,
@@ -1319,23 +1356,23 @@ def show_dashboard():
     # Combinar despesas e receitas
     all_transactions = []
     
-    for expense in expenses[-10:]:  # Últimas 10 despesas
-        all_transactions.append({
-            'Data': format_brazilian_date(expense[1]),
-            'Tipo': 'Despesa',
-            'Descrição': expense[2],
-            'Categoria': expense[4],
-            'Valor': -expense[3]
-        })
-    
-    for income in incomes[-10:]:  # Últimas 10 receitas
-        all_transactions.append({
-            'Data': format_brazilian_date(income[1]),
-            'Tipo': 'Receita',
-            'Descrição': income[3],
-            'Categoria': income[2],
-            'Valor': income[4]
-        })
+    for expense in expenses[-10:]:
+    all_transactions.append({
+        'Data': format_brazilian_date(expense[1]),  # ← Adicione formatação aqui
+        'Tipo': 'Despesa',
+        'Descrição': expense[2],
+        'Categoria': expense[4],
+        'Valor': -expense[3]
+    })
+
+    for income in incomes[-10:]:
+    all_transactions.append({
+        'Data': format_brazilian_date(income[1]),  # ← Adicione formatação aqui
+        'Tipo': 'Receita',
+        'Descrição': income[3],
+        'Categoria': income[2],
+        'Valor': income[4]
+    })
     
     # Ordenar por data (mais recente primeiro)
     if all_transactions:
