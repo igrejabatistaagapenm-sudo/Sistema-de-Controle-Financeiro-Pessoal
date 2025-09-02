@@ -18,6 +18,23 @@ import csv
 import os
 import time
 
+# Se não estamos logados, limpar tudo e mostrar apenas login
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    # Limpar todo o conteúdo existente
+    st.markdown("""
+        <style>
+            .stApp > div {
+                display: none;
+            }
+            .stApp > div:first-child {
+                display: block;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
 # Configuração da página
 st.set_page_config(
     page_title="Sistema de Controle Financeiro - Igreja Batista Ágape",
@@ -864,23 +881,22 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Usar container principal para controlar melhor o conteúdo
-    main_container = st.container()
+    # Limpar qualquer conteúdo residual
+    st.empty()
     
-    with main_container:
-        # Navegação principal baseada no estado de login
-        if not st.session_state.logged_in:
-            # Mostrar APENAS a página de login
-            show_login_page()
+    # Navegação principal baseada no estado de login
+    if not st.session_state.logged_in:
+        # Mostrar APENAS a página de login
+        show_login_page()
+    else:
+        # VERIFICAR SE PRECISA COMPLETAR CADASTRO
+        if st.session_state.user_info is None:
+            st.session_state.user_info = get_user_info(st.session_state.username)
+        
+        if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
+            show_complete_registration_page()
         else:
-            # VERIFICAR SE PRECISA COMPLETAR CADASTRO
-            if st.session_state.user_info is None:
-                st.session_state.user_info = get_user_info(st.session_state.username)
-            
-            if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
-                show_complete_registration_page()
-            else:
-                show_main_application()
+            show_main_application()
             return  # Sair após mostrar página de cadastro
         
         # Limpar sidebar antes de mostrar o menu
@@ -1694,83 +1710,7 @@ def incomes_page():
             income_value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
             income_description = st.text_input("Descrição*", placeholder="Ex: Oferta do culto de domingo")
         
-        # Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
-        st.subheader("Informações do Contribuinte (Opcional)")
-        contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
-        
-        if contrib_tipo != "Não informar":
-            col3, col4 = st.columns(2)
-            with col3:
-                # Buscar CPF/CNPJ cadastrados para autocompletar
-                cpf_cnpj_cadastrados = get_all_cpf_cnpj()
-                opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
-                
-                if contrib_tipo == "Física":
-                    cpf_selecionado = st.selectbox("CPF do Contribuinte", 
-                                                 [""] + opcoes_cpf_cnpj,
-                                                 format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-                    
-                    if cpf_selecionado:
-                        contrib_cpf = st.text_input("CPF (editar se necessário)", 
-                                                  value=cpf_selecionado,
-                                                  placeholder="000.000.000-00")
-                    else:
-                        contrib_cpf = st.text_input("CPF do Contribuinte", 
-                                                  placeholder="000.000.000-00")
-                    contrib_identifier = contrib_cpf
-                else:
-                    cnpj_selecionado = st.selectbox("CNPJ do Contribuinte", 
-                                                  [""] + opcoes_cpf_cnpj,
-                                                  format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-                    
-                    if cnpj_selecionado:
-                        contrib_cnpj = st.text_input("CNPJ (editar se necessário)", 
-                                                   value=cnpj_selecionado,
-                                                   placeholder="00.000.000/0000-00")
-                    else:
-                        contrib_cnpj = st.text_input("CNPJ do Contribuinte", 
-                                                   placeholder="00.000.000/0000-00")
-                    contrib_identifier = contrib_cnpj
-            
-            with col4:
-                contrib_name = st.text_input("Nome do Contribuinte", placeholder="Nome completo ou razão social")
-        
-        if st.form_submit_button("Adicionar Receita"):
-            if income_value and income_description:
-                # Validar CPF/CNPJ se fornecido
-                cpf_cnpj = None
-                tipo_pessoa = None
-                
-                if contrib_tipo != "Não informar" and contrib_identifier:
-                    cpf_cnpj_clean = re.sub(r'[^0-9]', '', contrib_identifier)
-                    
-                    if contrib_tipo == "Física":
-                        if validate_cpf(cpf_cnpj_clean):
-                            cpf_cnpj = cpf_cnpj_clean
-                            tipo_pessoa = "Física"
-                        else:
-                            st.error("CPF inválido. A receita será cadastrada sem informações do contribuinte.")
-                    else:
-                        if validate_cnpj(cpf_cnpj_clean):
-                            cpf_cnpj = cpf_cnpj_clean
-                            tipo_pessoa = "Jurídica"
-                        else:
-                            st.error("CNPJ inválido. A receita será cadastrada sem informações do contribuinte.")
-                
-                add_income(
-                    income_date.strftime("%Y-%m-%d"),
-                    income_type,
-                    income_description,
-                    income_value,
-                    st.session_state.username,
-                    cpf_cnpj,
-                    tipo_pessoa
-                )
-                st.success("Receita adicionada com sucesso!")
-                rerun()
-            else:
-                st.error("Por favor, preencha todos os campos obrigatórios.")
-    
+       
     # Lista de receitas - CORRIGIDA
     st.subheader("📋 Receitas Cadastradas")
     incomes = get_incomes(st.session_state.username)
@@ -1814,7 +1754,7 @@ def incomes_page():
 
 
 # Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
-st.subheader("Informações do Contribuinte (Opcional)")
+st.subheader("Informações do Contribuinte (Opcional)") #certo
 contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
 
 if contrib_tipo != "Não informar":
