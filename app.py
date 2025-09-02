@@ -885,6 +885,7 @@ def main():
     create_user()
     create_tables()
     check_and_update_tables()  # Verificar e atualizar estrutura das tabelas
+    show_expense_form()
     
     # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
@@ -1259,6 +1260,8 @@ def show_income_form():
                     st.error(f"Erro ao registrar receita: {str(e)}")
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
+                
+            show_expense_form()    
 
 # Relatórios
 def show_reports():
