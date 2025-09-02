@@ -1179,7 +1179,7 @@ def show_dashboard():
 
 # Formulário de despesa
 def show_income_form():
-    st.title("💸 Registrar Despesa")
+        st.title("💸 Registrar Despesa")
     
     with st.form("expense_form"):
         col1, col2 = st.columns(2)
