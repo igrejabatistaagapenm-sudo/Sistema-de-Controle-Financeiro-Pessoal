@@ -1005,6 +1005,174 @@ def show_complete_registration_page():
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
 
+def show_expense_form():
+    st.title("💸 Registrar Despesa")
+    
+    with st.form("expense_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            expense_date = st.date_input("Data*", value=dt_date.today())
+            origin = st.text_input("Origem/Descrição*")
+            value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
+        
+        with col2:
+            category = st.selectbox("Categoria*", 
+                                  ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Outros"])
+            
+            # Opções para CPF/CNPJ
+            tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
+            
+            if tipo_pessoa != "Não informar":
+                if tipo_pessoa == "Física":
+                    cpf_cnpj = st.text_input("CPF do Fornecedor", placeholder="000.000.000-00")
+                    if cpf_cnpj and not validate_cpf(cpf_cnpj):
+                        st.error("CPF inválido. Por favor, verifique o número.")
+                else:
+                    cpf_cnpj = st.text_input("CNPJ do Fornecedor", placeholder="00.000.000/0000-00")
+                    if cpf_cnpj and not validate_cnpj(cpf_cnpj):
+                        st.error("CNPJ inválido. Por favor, verifique o número.")
+            else:
+                cpf_cnpj = None
+        
+        submitted = st.form_submit_button("Registrar Despesa")
+        
+        if submitted:
+            if origin and value > 0:
+                try:
+                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
+                    if tipo_pessoa == "Não informar":
+                        add_expense(
+                            expense_date.strftime("%Y-%m-%d"),
+                            origin,
+                            value,
+                            category,
+                            st.session_state.username
+                        )
+                    else:
+                        # Validar CPF/CNPJ antes de inserir
+                        cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None
+                        
+                        if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
+                           (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj_clean)):
+                            add_expense(
+                                expense_date.strftime("%Y-%m-%d"),
+                                origin,
+                                value,
+                                category,
+                                st.session_state.username,
+                                cpf_cnpj_clean,
+                                tipo_pessoa
+                            )
+                        else:
+                            st.error("CPF/CNPJ inválido. A despesa será cadastrada sem informações do fornecedor.")
+                            add_expense(
+                                expense_date.strftime("%Y-%m-%d"),
+                                origin,
+                                value,
+                                category,
+                                st.session_state.username
+                            )
+                    
+                    st.success("Despesa registrada com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
+                except sqlite3.OperationalError as e:
+                    if "no such column" in str(e):
+                        st.error("Erro na estrutura do banco de dados. Atualizando tabelas...")
+                        check_and_update_tables()
+                        st.rerun()
+                    else:
+                        st.error(f"Erro ao registrar despesa: {str(e)}")
+                except Exception as e:
+                    st.error(f"Erro ao registrar despesa: {str(e)}")
+            else:
+                st.error("Por favor, preencha todos os campos obrigatórios.")
+
+def show_income_form():
+    st.title("💰 Registrar Receita")
+    
+    with st.form("income_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            income_date = st.date_input("Data*", value=dt_date.today())
+            type_income = st.selectbox("Tipo de Receita*", 
+                                     ["Dízimo", "Oferta", "Doação", "Evento", "Outros"])
+            value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
+        
+        with col2:
+            description = st.text_input("Descrição*")
+            
+            # Opções para CPF/CNPJ
+            tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
+            
+            if tipo_pessoa != "Não informar":
+                if tipo_pessoa == "Física":
+                    cpf_cnpj = st.text_input("CPF do Doador", placeholder="000.000.000-00")
+                    if cpf_cnpj and not validate_cpf(cpf_cnpj):
+                        st.error("CPF inválido. Por favor, verifique o número.")
+                else:
+                    cpf_cnpj = st.text_input("CNPJ do Doador", placeholder="00.000.000/0000-00")
+                    if cpf_cnpj and not validate_cnpj(cpf_cnpj):
+                        st.error("CNPJ inválido. Por favor, verifique o número.")
+            else:
+                cpf_cnpj = None
+        
+        submitted = st.form_submit_button("Registrar Receita")
+        
+        if submitted:
+            if description and value > 0:
+                try:
+                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
+                    if tipo_pessoa == "Não informar":
+                        add_income(
+                            income_date.strftime("%Y-%m-%d"),
+                            type_income,
+                            description,
+                            value,
+                            st.session_state.username
+                        )
+                    else:
+                        # Validar CPF/CNPJ antes de inserir
+                        cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None
+                        
+                        if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
+                           (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj_clean)):
+                            add_income(
+                                income_date.strftime("%Y-%m-%d"),
+                                type_income,
+                                description,
+                                value,
+                                st.session_state.username,
+                                cpf_cnpj_clean,
+                                tipo_pessoa
+                            )
+                        else:
+                            st.error("CPF/CNPJ inválido. A receita será cadastrada sem informações do doador.")
+                            add_income(
+                                income_date.strftime("%Y-%m-%d"),
+                                type_income,
+                                description,
+                                value,
+                                st.session_state.username
+                            )
+                    
+                    st.success("Receita registrada com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
+                except sqlite3.OperationalError as e:
+                    if "no such column" in str(e):
+                        st.error("Erro na estrutura do banco de dados. Atualizando tabelas...")
+                        check_and_update_tables()
+                        st.rerun()
+                    else:
+                        st.error(f"Erro ao registrar receita: {str(e)}")
+                except Exception as e:
+                    st.error(f"Erro ao registrar receita: {str(e)}")
+            else:
+                st.error("Por favor, preencha todos os campos obrigatórios.")
+
 # Página principal da aplicação
 def show_main_app():
     # Menu lateral
@@ -1176,91 +1344,6 @@ def show_dashboard():
         st.dataframe(transactions_df, use_container_width=True)
     else:
         st.info("Nenhuma transação registrada.")
-
-# Formulário de despesa
-def show_income_form():
-    st.title("💸 Registrar Despesa")
-    
-    with st.form("expense_form"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            expense_date = st.date_input("Data*", value=dt_date.today())
-            origin = st.text_input("Origem/Descrição*")
-            value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
-        
-        with col2:
-            category = st.selectbox("Categoria*", 
-                                  ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Outros"])
-            
-            # Opções para CPF/CNPJ
-            tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
-            
-            if tipo_pessoa != "Não informar":
-                if tipo_pessoa == "Física":
-                    cpf_cnpj = st.text_input("CPF do Fornecedor", placeholder="000.000.000-00")
-                    if cpf_cnpj and not validate_cpf(cpf_cnpj):
-                        st.error("CPF inválido. Por favor, verifique o número.")
-                else:
-                    cpf_cnpj = st.text_input("CNPJ do Fornecedor", placeholder="00.000.000/0000-00")
-                    if cpf_cnpj and not validate_cnpj(cpf_cnpj):
-                        st.error("CNPJ inválido. Por favor, verifique o número.")
-            else:
-                cpf_cnpj = None
-        
-        submitted = st.form_submit_button("Registrar Despesa")
-        
-        if submitted:
-            if origin and value > 0:
-                try:
-                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
-                    if tipo_pessoa == "Não informar":
-                        add_expense(
-                            expense_date.strftime("%Y-%m-%d"),
-                            origin,
-                            value,
-                            category,
-                            st.session_state.username
-                        )
-                    else:
-                        # Validar CPF/CNPJ antes de inserir
-                        cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None
-                        
-                        if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
-                           (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj_clean)):
-                            add_expense(
-                                expense_date.strftime("%Y-%m-%d"),
-                                origin,
-                                value,
-                                category,
-                                st.session_state.username,
-                                cpf_cnpj_clean,
-                                tipo_pessoa
-                            )
-                        else:
-                            st.error("CPF/CNPJ inválido. A despesa será cadastrada sem informações do fornecedor.")
-                            add_expense(
-                                expense_date.strftime("%Y-%m-%d"),
-                                origin,
-                                value,
-                                category,
-                                st.session_state.username
-                            )
-                    
-                    st.success("Despesa registrada com sucesso!")
-                    time.sleep(1)
-                    st.rerun()
-                except sqlite3.OperationalError as e:
-                    if "no such column" in str(e):
-                        st.error("Erro na estrutura do banco de dados. Atualizando tabelas...")
-                        check_and_update_tables()
-                        st.rerun()
-                    else:
-                        st.error(f"Erro ao registrar despesa: {str(e)}")
-                except Exception as e:
-                    st.error(f"Erro ao registrar despesa: {str(e)}")
-            else:
-                st.error("Por favor, preencha todos os campos obrigatórios.")
 
 # Relatórios
 def show_reports():
