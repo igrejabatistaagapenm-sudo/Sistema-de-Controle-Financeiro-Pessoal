@@ -28,20 +28,12 @@ st.set_page_config(
 
 # Função para rerun (compatibilidade com versões do Streamlit)
 def rerun():
-    try:
-        st.rerun()
-    except:
-        try:
-            st.rerun()
-        except:
-            # Fallback com JavaScript
-            st.markdown("""
-                <script>
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 100);
-                </script>
-            """, unsafe_allow_html=True)
+    # Apenas recarrega a página via JavaScript
+    st.markdown("""
+        <script>
+            window.location.reload(true);
+        </script>
+    """, unsafe_allow_html=True)
 
 # Funções de validação de CPF/CNPJ
 def validate_cpf(cpf):
@@ -717,11 +709,17 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
+    # Se acabou de fazer login, forçar recarregamento
+    if st.session_state.get('just_logged_in', False):
+        st.session_state.just_logged_in = False
+        st.markdown("<script>window.location.reload(true)</script>", unsafe_allow_html=True)
+        return
+    
     # Navegação principal
     if not st.session_state.logged_in:
-        # Se não está logado, mostrar login
         st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
         login_page()
+   
     else:
         # VERIFICAR SE PRECISA COMPLETAR CADASTRO
         if st.session_state.user_info is None:
@@ -789,10 +787,8 @@ def login_page():
                 st.session_state.user_info = get_user_info(username)
                 st.success("Login realizado com sucesso!")
                 
-                # Forçar redirecionamento manual
-                st.markdown("<script>window.location.reload()</script>", unsafe_allow_html=True)
-                time.sleep(0.5)
-                rerun()
+                # Forçar recarregamento completo da página
+                st.markdown("<script>window.location.reload(true)</script>", unsafe_allow_html=True)
                 
             else:
                 st.error("Usuário ou senha incorretos")
