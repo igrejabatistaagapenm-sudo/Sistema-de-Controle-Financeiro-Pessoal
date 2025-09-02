@@ -1039,7 +1039,7 @@ def show_complete_registration_page():
 def show_expense_form():
     st.title("💸 Registrar Despesa")
     
-    with st.form("expense_form"):
+    with st.form("expense_form", clear_on_submit=True):  # Adicionar clear_on_submit=True
         col1, col2 = st.columns(2)
         
         with col1:
@@ -1127,7 +1127,7 @@ def show_expense_form():
 def show_income_form():
     st.title("💰 Registrar Receita")
     
-    with st.form("income_form"):
+    with st.form("income_form", clear_on_submit=True):  # Adicionar clear_on_submit=True
         col1, col2 = st.columns(2)
         
         with col1:
