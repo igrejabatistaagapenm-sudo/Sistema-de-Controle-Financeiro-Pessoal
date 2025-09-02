@@ -18,23 +18,6 @@ import csv
 import os
 import time
 
-# Se não estamos logados, limpar tudo e mostrar apenas login
-#if 'logged_in' not in st.session_state:
-    #st.session_state.logged_in = False
-
-#if not st.session_state.logged_in:
-    # Limpar todo o conteúdo existente
-    ##st.markdown("""
-        #<style>
-            #.stApp > div {
-                #display: none;
-           # }
-           # .stApp > div:first-child {
-           #     display: block;
-          #  }
-       # </style>
-    #""", unsafe_allow_html=True)
-
 # Configuração da página
 st.set_page_config(
     page_title="Sistema de Controle Financeiro - Igreja Batista Ágape",
@@ -43,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Função para rerun (compatibilidade với versões do Streamlit)
+# Função para rerun (compatibilidade com versões do Streamlit)
 def rerun():
     # Apenas recarrega a página via JavaScript
     st.markdown("""
@@ -431,7 +414,7 @@ def export_to_excel(expenses, incomes):
     # Criar DataFrames com verificação de colunas
     expense_data = []
     for expense in expenses:
-        # Verificar se os índices existem antes de acessá-los
+        # Verificar se os índices existen antes de acessá-los
         cpf_cnpj = expense[6] if len(expense) > 6 else None
         tipo_pessoa = expense[7] if len(expense) > 7 else None
         
@@ -450,7 +433,7 @@ def export_to_excel(expenses, incomes):
     
     income_data = []
     for income in incomes:
-        # Verificar se os índices existem antes de acessá-los
+        # Verificar se os índices existen antes de acessá-los
         cpf_cnpj = income[6] if len(income) > 6 else None
         tipo_pessoa = income[7] if len(income) > 7 else None
         
@@ -522,7 +505,7 @@ def export_to_excel(expenses, incomes):
             # Combinar dados em um único DataFrame para CSV
             combined_data = []
             for expense in expenses:
-                # Verificar se os índices existem antes de acessá-los
+                # Verificar se os índices existen antes de acessá-los
                 cpf_cnpj = expense[6] if len(expense) > 6 else None
                 tipo_pessoa = expense[7] if len(expense) > 7 else None
                 
@@ -537,7 +520,7 @@ def export_to_excel(expenses, incomes):
                 })
             
             for income in incomes:
-                # Verificar se os índices existem antes de acessá-los
+                # Verificar se os índices existen antes de acessá-los
                 cpf_cnpj = income[6] if len(income) > 6 else None
                 tipo_pessoa = income[7] if len(income) > 7 else None
                 
@@ -578,7 +561,7 @@ def export_to_html_with_logo(expenses, incomes, filters=None):
     # Criar DataFrames com verificação de colunas
     expense_data = []
     for expense in expenses:
-        # Verificar se os índices existem antes de acessá-los
+        # Verificar se os índices existen antes de acessá-los
         cpf_cnpj = expense[6] if len(expense) > 6 else None
         tipo_pessoa = expense[7] if len(expense) > 7 else None
         
@@ -597,7 +580,7 @@ def export_to_html_with_logo(expenses, incomes, filters=None):
     
     income_data = []
     for income in incomes:
-        # Verificar se os índices existem antes de acessá-los
+        # Verificar se os índices existen antes de acessá-los
         cpf_cnpj = income[6] if len(income) > 6 else None
         tipo_pessoa = income[7] if len(income) > 7 else None
         
@@ -881,9 +864,6 @@ def main():
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
     
-    # Limpar qualquer conteúdo residual
-    st.empty()
-    
     # Navegação principal baseada no estado de login
     if not st.session_state.logged_in:
         # Mostrar APENAS a página de login
@@ -896,1180 +876,807 @@ def main():
         if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
             show_complete_registration_page()
         else:
-            show_main_application()
-            return  # Sair após mostrar página de cadastro
-        
-        # Limpar sidebar antes de mostrar o menu
-        st.sidebar.empty()
-        
-        # MOSTRAR MENU E PÁGINAS (SEM TÍTULO AQUI, CADA PÁGINA TEM SEU PRÓPRIO)
-        if st.session_state.is_admin:
-            menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
-        else:
-            menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
-            
-        choice = st.sidebar.selectbox("Navegação", menu)
-        
-        # Limpar conteúdo principal antes de mostrar a página selecionada
-        st.empty()
-        
-        # Exibir página selecionada
-        if choice == "Dashboard":
-            dashboard_page()
-        elif choice == "Despesas":
-            expenses_page()
-        elif choice == "Receitas":
-            incomes_page()
-        elif choice == "Relatórios":
-            reports_page()
-        elif choice == "Configurações":
-            settings_page()
-        elif choice == "Administração" and st.session_state.is_admin:
-            admin_page()
-        elif choice == "Importar Dados":
-            import_data_page()
-        
-        # Botão de logout
-        st.sidebar.write("---")
-        if st.sidebar.button("🚪 Sair"):
-            st.session_state.logged_in = False
-            st.session_state.username = ""
-            st.session_state.is_admin = False
-            st.session_state.user_info = None
-            st.session_state.initialized = False
-            st.rerun()
+            show_main_app()
 
-# Página de login - CORRIGIDA
-def login_page():
+# Página de login
+def show_login_page():
     # Limpar qualquer conteúdo anterior
     st.empty()
     
-    st.header("Login")
-    
-    username = st.text_input("Usuário")
-    password = st.text_input("Senha", type="password")
-    
-    if st.button("Entrar"):
-        if not username or not password:
-            st.error("Por favor, preencha todos os campos.")
-            return
-            
-        hashed_pswd = make_hashes(password)
-        
-        # Verificar credenciais
-        conn = None
-        try:
-            conn = sqlite3.connect('finance.db')
-            c = conn.cursor()
-            c.execute('SELECT * FROM userstable WHERE username =? AND password = ?', (username, hashed_pswd))
-            result = c.fetchall()
-            
-            if result:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.session_state.is_admin = (username == "admin")
-                st.session_state.user_info = get_user_info(username)
-                st.success("Login realizado com sucesso!")
-                
-                # Forçar recarregamento completo
-                st.rerun()
-                
-            else:
-                st.error("Usuário ou senha incorretos")
-                
-        except sqlite3.OperationalError as e:
-            st.error(f"Erro no banco de dados: {str(e)}")
-        except Exception as e:
-            st.error(f"Erro inesperado: {str(e)}")
-        finally:
-            if conn:
-                conn.close()
-
-def show_login_page():
-    """Mostra apenas a página de login"""
-    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-    
+    # Centralizar o formulário de login
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.header("Login")
+        st.title("✝️ Igreja Batista Ágape")
+        st.subheader("Sistema de Controle Financeiro")
         
-        username = st.text_input("Usuário", key="login_username")
-        password = st.text_input("Senha", type="password", key="login_password")
+        # Adicionar logo se disponível
+        logo_path = "logo_igreja.png"
+        if os.path.exists(logo_path):
+            st.image(logo_path, width=150)
         
-        if st.button("Entrar", key="login_button"):
-            if not username or not password:
-                st.error("Por favor, preencha todos os campos.")
-                return
-                
-            hashed_pswd = make_hashes(password)
+        # Formulário de login
+        with st.form("login_form"):
+            username = st.text_input("Usuário")
+            password = st.text_input("Senha", type="password")
+            submitted = st.form_submit_button("Entrar")
             
-            # Verificar credenciais
-            conn = None
-            try:
-                conn = sqlite3.connect('finance.db')
-                c = conn.cursor()
-                c.execute('SELECT * FROM userstable WHERE username =? AND password = ?', (username, hashed_pswd))
-                result = c.fetchall()
-                
-                if result:
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                    st.session_state.is_admin = (username == "admin")
-                    st.session_state.user_info = get_user_info(username)
-                    st.session_state.page = "Dashboard"
-                    st.rerun()
+            if submitted:
+                if username and password:
+                    hashed_password = make_hashes(password)
+                    result = login_user(username, hashed_password)
                     
+                    if result:
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.session_state.user_info = get_user_info(username)
+                        st.session_state.is_admin = (username == "admin")
+                        st.success(f"Bem-vindo(a), {username}!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("Usuário ou senha incorretos")
                 else:
-                    st.error("Usuário ou senha incorretos")
-                    
-            except sqlite3.OperationalError as e:
-                st.error(f"Erro no banco de dados: {str(e)}")
-            except Exception as e:
-                st.error(f"Erro inesperado: {str(e)}")
-            finally:
-                if conn:
-                    conn.close()
+                    st.warning("Por favor, preencha todos os campos")
+        
+        # Link para criar conta
+        st.markdown("---")
+        if st.button("Criar nova conta"):
+            st.session_state.page = "Criar Conta"
+            st.rerun()
+        
+        # Informações de acesso de demonstração
+        st.info("""
+        **Acesso de demonstração:**
+        - Usuário: admin
+        - Senha: 1234
+        """)
 
+# Página de registro
 def show_complete_registration_page():
-    """Mostra apenas a página de completar cadastro"""
-    st.header("📝 Completar Cadastro")
+    st.title("✝️ Complete seu Cadastro")
+    st.write("Para continuar usando o sistema, precisamos de algumas informações adicionais:")
     
     with st.form("complete_registration"):
-        nome_completo = st.text_input("Nome Completo*", placeholder="Digite seu nome completo")
+        nome_completo = st.text_input("Nome Completo*")
+        
         tipo_pessoa = st.radio("Tipo de Pessoa*", ["Física", "Jurídica"])
         
         if tipo_pessoa == "Física":
-            cpf = st.text_input("CPF*", placeholder="000.000.000-00")
-            cpf_cnpj = cpf
+            cpf_cnpj = st.text_input("CPF*", placeholder="000.000.000-00")
+            if cpf_cnpj:
+                if not validate_cpf(cpf_cnpj):
+                    st.error("CPF inválido. Por favor, verifique o número.")
         else:
-            cnpj = st.text_input("CNPJ*", placeholder="00.000.000/0000-00")
-            cpf_cnpj = cnpj
+            cpf_cnpj = st.text_input("CNPJ*", placeholder="00.000.000/0000-00")
+            if cpf_cnpj:
+                if not validate_cnpj(cpf_cnpj):
+                    st.error("CNPJ inválido. Por favor, verifique o número.")
         
-        if st.form_submit_button("Completar Cadastro"):
+        submitted = st.form_submit_button("Salvar e Continuar")
+        
+        if submitted:
             if nome_completo and cpf_cnpj:
-                # Validar CPF/CNPJ
-                cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj)
-                
-                if tipo_pessoa == "Física":
-                    if not validate_cpf(cpf_cnpj_clean):
-                        st.error("CPF inválido. Por favor, verifique o número.")
-                        return
+                if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj)) or (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj)):
+                    # Salvar informações no banco de dados
+                    update_user_info(st.session_state.username, nome_completo, cpf_cnpj, tipo_pessoa)
+                    st.session_state.user_info = (nome_completo, cpf_cnpj, tipo_pessoa)
+                    st.success("Cadastro completado com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
                 else:
-                    if not validate_cnpj(cpf_cnpj_clean):
-                        st.error("CNPJ inválido. Por favor, verifique o número.")
-                        return
-                
-                # Atualizar informações do usuário
-                update_user_info(st.session_state.username, nome_completo, cpf_cnpj_clean, tipo_pessoa)
-                st.session_state.user_info = (nome_completo, cpf_cnpj_clean, tipo_pessoa)
-                st.success("Cadastro completado com sucesso!")
-                st.session_state.page = "Dashboard"
-                st.rerun()
+                    st.error("Por favor, insira um CPF ou CNPJ válido.")
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
 
-def show_main_application():
-    """Mostra a aplicação principal após login"""
-    # Configurar sidebar
+# Página principal da aplicação
+def show_main_app():
+    # Menu lateral
     with st.sidebar:
-        st.title("🧭 Navegação")
+        st.title(f"✝️ Bem-vindo(a), {st.session_state.username}")
+        
+        # Exibir informações do usuário se disponíveis
+        if st.session_state.user_info:
+            nome_completo, cpf_cnpj, tipo_pessoa = st.session_state.user_info
+            st.write(f"**Nome:** {nome_completo}")
+            if cpf_cnpj:
+                if tipo_pessoa == "Física":
+                    st.write(f"**CPF:** {format_cpf(cpf_cnpj)}")
+                else:
+                    st.write(f"**CNPJ:** {format_cnpj(cpf_cnpj)}")
+        
+        st.markdown("---")
+        
+        # Menu de navegação
+        menu_options = ["📊 Dashboard", "💸 Registrar Despesa", "💰 Registrar Receita", 
+                       "📋 Visualizar Relatórios", "⚙️ Configurações"]
         
         if st.session_state.is_admin:
-            menu_options = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
-        else:
-            menu_options = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
-            
-        selection = st.radio("Menu", menu_options, index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0)
+            menu_options.append("👥 Gerenciar Usuários")
         
-        st.session_state.page = selection
+        selected_option = st.radio("Navegação", menu_options)
         
-        st.write("---")
-        if st.button("🚪 Sair", key="logout_button"):
+        st.markdown("---")
+        
+        # Botão de logout
+        if st.button("🚪 Sair"):
             st.session_state.logged_in = False
             st.session_state.username = ""
-            st.session_state.is_admin = False
             st.session_state.user_info = None
-            st.session_state.page = "Login"
+            st.session_state.is_admin = False
             st.rerun()
     
-    # Mostrar página selecionada
-    if st.session_state.page == "Dashboard":
-        dashboard_page()
-    elif st.session_state.page == "Despesas":
-        expenses_page()
-    elif st.session_state.page == "Receitas":
-        incomes_page()
-    elif st.session_state.page == "Relatórios":
-        reports_page()
-    elif st.session_state.page == "Configurações":
-        settings_page()
-    elif st.session_state.page == "Administração":
-        admin_page()
-    elif st.session_state.page == "Importar Dados":
-        import_data_page()
-                
+    # Conteúdo principal baseado na seleção do menu
+    if selected_option == "📊 Dashboard":
+        show_dashboard()
+    elif selected_option == "💸 Registrar Despesa":
+        show_expense_form()
+    elif selected_option == "💰 Registrar Receita":
+        show_income_form()
+    elif selected_option == "📋 Visualizar Relatórios":
+        show_reports()
+    elif selected_option == "⚙️ Configurações":
+        show_settings()
+    elif selected_option == "👥 Gerenciar Usuários" and st.session_state.is_admin:
+        show_user_management()
 
-# Página de completar cadastro
-def complete_registration_page():
-    if not st.session_state.logged_in:
-        return
-    
-    # Limpar conteúdo anterior
-    st.empty()
-    
-    st.header("📝 Completar Cadastro")
-    
-    with st.form("complete_registration"):
-        nome_completo = st.text_input("Nome Completo*", placeholder="Digite seu nome completo")
-        tipo_pessoa = st.radio("Tipo de Pessoa*", ["Física", "Jurídica"])
-        
-        if tipo_pessoa == "Física":
-            cpf = st.text_input("CPF*", placeholder="000.000.000-00")
-            cpf_cnpj = cpf
-        else:
-            cnpj = st.text_input("CNPJ*", placeholder="00.000.000/0000-00")
-            cpf_cnpj = cnpj
-        
-        if st.form_submit_button("Completar Cadastro"):
-            if nome_completo and cpf_cnpj:
-                # Validar CPF/CNPJ
-                cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj)
-                
-                if tipo_pessoa == "Física":
-                    if not validate_cpf(cpf_cnpj_clean):
-                        st.error("CPF inválido. Por favor, verifique o número.")
-                        return
-                else:
-                    if not validate_cnpj(cpf_cnpj_clean):
-                        st.error("CNPJ inválido. Por favor, verifique o número.")
-                        return
-                
-                # Atualizar informações do usuário
-                update_user_info(st.session_state.username, nome_completo, cpf_cnpj_clean, tipo_pessoa)
-                st.session_state.user_info = (nome_completo, cpf_cnpj_clean, tipo_pessoa)
-                st.success("Cadastro completado com sucesso!")
-                st.rerun()
-            else:
-                st.error("Por favor, preencha todos os campos obrigatórios.")
-
-# Página de importação de dados
-def import_data_page():
-    if not st.session_state.logged_in:
-        return
-    st.header("📤 Importar Dados de Planilha")
-    
-    st.info("""
-    **Instruções para importação:**
-    - Para **despesas**: a planilha deve conter colunas: Data, Origem, Valor, Categoria
-    - Para **receitas**: a planilha deve conter colunas: Data, Tipo, Descrição, Valor
-    - Colunas opcionais: CPF, CNPJ, CPF_CNPJ
-    - Formato de data: DD/MM/AAAA ou YYYY-MM-DD
-    - Formatos suportados: Excel (.xlsx, .xls) e CSV
-    """)
-    
-    tab1, tab2 = st.tabs(["Importar Despesas", "Importar Receitas"])
-    
-    with tab1:
-        st.subheader("Importar Despesas")
-        uploaded_file = st.file_uploader("Selecione a planilha de despesas", 
-                                       type=['xlsx', 'xls', 'csv'],
-                                       key="expense_import")
-        if uploaded_file is not None:
-            if st.button("Importar Despesas", key="import_expenses_btn"):
-                success, message = import_from_spreadsheet(uploaded_file, st.session_state.username, is_income=False)
-                if success:
-                    st.success(message)
-                else:
-                    st.error(message)
-    
-    with tab2:
-        st.subheader("Importar Receitas")
-        uploaded_file = st.file_uploader("Selecione a planilha de receitas", 
-                                       type=['xlsx', 'xls', 'csv'],
-                                       key="income_import")
-        
-        if uploaded_file is not None:
-            if st.button("Importar Receitas", key="import_incomes_btn"):
-                success, message = import_from_spreadsheet(uploaded_file, st.session_state.username, is_income=True)
-                if success:
-                    st.success(message)
-                else:
-                    st.error(message)
-
-# Página de administração
-def admin_page():
-    if not st.session_state.logged_in or not st.session_state.is_admin:
-        return
-        
-    st.header("👨‍💼 Painel de Administração")
-    
-    tab1, tab2 = st.tabs(["Gerenciar Usuários", "Estatísticas do Sistema"])
-    
-    with tab1:
-        st.subheader("Gerenciar Usuários")
-        
-        # Adicionar novo usuário
-        with st.form("add_user_form"):
-            st.write("Adicionar Novo Usuário")
-            new_username = st.text_input("Nome de usuário*")
-            new_password = st.text_input("Senha*", type="password")
-            confirm_password = st.text_input("Confirmar senha*", type="password")
-            nome_completo = st.text_input("Nome Completo*")
-            tipo_pessoa = st.radio("Tipo de Pessoa*", ["Física", "Jurídica"])
-            
-            if tipo_pessoa == "Física":
-                cpf = st.text_input("CPF*", placeholder="000.000.000-00")
-                cpf_cnpj = cpf
-            else:
-                cnpj = st.text_input("CNPJ*", placeholder="00.000.000/0000-00")
-                cpf_cnpj = cnpj
-            
-            if st.form_submit_button("Adicionar Usuário"):
-                if not new_username or not new_password or not nome_completo or not cpf_cnpj:
-                    st.error("Por favor, preencha todos os campos obrigatórios.")
-                elif new_password != confirm_password:
-                    st.error("As senhas não coincidem.")
-                else:
-                    # Verificar se usuário já existe
-                    conn = sqlite3.connect('finance.db')
-                    c = conn.cursor()
-                    c.execute('SELECT * FROM userstable WHERE username = ?', (new_username,))
-                    if c.fetchone():
-                        st.error("Nome de usuário já existe.")
-                    else:
-                        # Validar CPF/CNPJ
-                        cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj)
-                        
-                        if tipo_pessoa == "Física":
-                            if not validate_cpf(cpf_cnpj_clean):
-                                st.error("CPF inválido.")
-                                return
-                        else:
-                            if not validate_cnpj(cpf_cnpj_clean):
-                                st.error("CNPJ inválido.")
-                                return
-                        
-                        hashed_password = make_hashes(new_password)
-                        add_user(new_username, hashed_password, nome_completo, cpf_cnpj_clean, tipo_pessoa)
-                        st.success(f"Usuário '{new_username}' adicionado com sucesso!")
-        
-        # Listar usuários
-        st.subheader("Usuários Cadastrados")
-        users = get_all_users()
-        
-        if users:
-            user_data = []
-            for user in users:
-                # Verificar quantas colunas retornaram
-                if len(user) >= 4:  # Tem todas as colunas
-                    user_data.append({
-                        "Usuário": user[0],
-                        "Nome": user[1],
-                        "CPF/CNPJ": format_cpf(user[2]) if len(user) > 2 and user[3] == "Física" else format_cnpj(user[2]) if len(user) > 2 and user[2] else "N/A",
-                        "Tipo": user[3] if len(user) > 3 else "N/A"
-                    })
-                elif len(user) >= 2:  # Tem pelo menos username e nome
-                    user_data.append({
-                        "Usuário": user[0],
-                        "Nome": user[1],
-                        "CPF/CNPJ": "N/A",
-                        "Tipo": "N/A"
-                    })
-                else:  # Só tem username
-                    user_data.append({
-                        "Usuário": user[0],
-                        "Nome": "N/A",
-                        "CPF/CNPJ": "N/A",
-                        "Tipo": "N/A"
-                    })
-            
-            user_df = pd.DataFrame(user_data)
-            st.dataframe(user_df, use_container_width=True)
-            
-            # Opção para remover usuário (apenas usuários não admin)
-            usuarios_nao_admin = [user[0] for user in users if user[0] != "admin"]
-            
-            if usuarios_nao_admin:
-                user_to_delete = st.selectbox("Selecionar usuário para remover", usuarios_nao_admin)
-                
-                if st.button("Remover Usuário", type="secondary"):
-                    if user_to_delete:
-                        delete_user(user_to_delete)
-                        st.success(f"Usuário '{user_to_delete}' removido com sucesso!")
-                        rerun()
-            else:
-                st.info("Nenhum usuário não-admin para remover.")
-        else:
-            st.info("Nenhum usuário cadastrado.")
-    
-    with tab2:
-        st.subheader("Estatísticas do Sistema")
-        
-        # Obter estatísticas gerais
-        conn = sqlite3.connect('finance.db')
-        c = conn.cursor()
-        
-        # Total de usuários
-        c.execute('SELECT COUNT(*) FROM userstable')
-        total_users = c.fetchone()[0] or 0
-        
-        # Total de transações
-        c.execute('SELECT COUNT(*) FROM expenses')
-        total_expenses = c.fetchone()[0] or 0
-        
-        c.execute('SELECT COUNT(*) FROM incomes')
-        total_incomes = c.fetchone()[0] or 0
-        
-        # Valores totais
-        c.execute('SELECT SUM(value) FROM expenses')
-        total_expense_value = c.fetchone()[0] or 0
-        
-        c.execute('SELECT SUM(value) FROM incomes')
-        total_income_value = c.fetchone()[0] or 0
-        
-        conn.close()
-        
-        # Exibir estatísticas
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Total de Usuários", total_users)
-            st.metric("Total de Despesas", total_expenses)
-        
-        with col2:
-            st.metric("Total de Receitas", total_incomes)
-            st.metric("Valor Total Despesas", f"R$ {total_expense_value:,.2f}")
-        
-        with col3:
-            st.metric("Saldo do Sistema", f"R$ {(total_income_value - total_expense_value):,.2f}")
-            st.metric("Valor Total Receitas", f"R$ {total_income_value:,.2f}")
-
-# Página de configurações
-def settings_page():
-    if not st.session_state.logged_in:
-        return
-    st.header("⚙️ Configurações")
-    
-    # Obter informações atuais do usuário
-    user_info = get_user_info(st.session_state.username)
-    
-    if user_info:
-        nome_completo, cpf_cnpj, tipo_pessoa = user_info
-        
-        with st.form("update_profile"):
-            st.subheader("Atualizar Perfil")
-            
-            new_nome = st.text_input("Nome Completo", value=nome_completo or "")
-            new_tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica"], 
-                                     index=0 if tipo_pessoa == "Física" else 1)
-            
-            if new_tipo_pessoa == "Física":
-                new_cpf = st.text_input("CPF", 
-                                      value=format_cpf(cpf_cnpj) if cpf_cnpj else "",
-                                      placeholder="000.000.000-00")
-                new_cpf_cnpj = new_cpf
-            else:
-                new_cnpj = st.text_input("CNPJ", 
-                                       value=format_cnpj(cpf_cnpj) if cpf_cnpj else "",
-                                       placeholder="00.000.000/0000-00")
-                new_cpf_cnpj = new_cnpj
-            
-            if st.form_submit_button("Atualizar Perfil"):
-                if new_nome and new_cpf_cnpj:
-                    # Validar CPF/CNPJ
-                    new_cpf_cnpj_clean = re.sub(r'[^0-9]', '', new_cpf_cnpj)
-                    
-                    if new_tipo_pessoa == "Física":
-                        if not validate_cpf(new_cpf_cnpj_clean):
-                            st.error("CPF inválido.")
-                            return
-                    else:
-                        if not validate_cnpj(new_cpf_cnpj_clean):
-                            st.error("CNPJ inválido.")
-                            return
-                    
-                    update_user_info(st.session_state.username, new_nome, new_cpf_cnpj_clean, new_tipo_pessoa)
-                    st.session_state.user_info = (new_nome, new_cpf_cnpj_clean, new_tipo_pessoa)
-                    st.success("Perfil atualizado com sucesso!")
-                else:
-                    st.error("Por favor, preencha todos os campos.")
-    
-    # Alterar senha
-    with st.form("change_password"):
-        st.subheader("Alterar Senha")
-        
-        current_password = st.text_input("Senha Atual", type="password")
-        new_password = st.text_input("Nova Senha", type="password")
-        confirm_password = st.text_input("Confirmar Nova Senha", type="password")
-        
-        if st.form_submit_button("Alterar Senha"):
-            if current_password and new_password and confirm_password:
-                # Verificar senha atual
-                hashed_current = make_hashes(current_password)
-                conn = sqlite3.connect('finance.db')
-                c = conn.cursor()
-                c.execute('SELECT * FROM userstable WHERE username = ? AND password = ?', 
-                         (st.session_state.username, hashed_current))
-                
-                if not c.fetchone():
-                    st.error("Senha atual incorreta.")
-                elif new_password != confirm_password:
-                    st.error("As novas senhas não coincidem.")
-                else:
-                    # Atualizar senha
-                    hashed_new = make_hashes(new_password)
-                    c.execute('UPDATE userstable SET password = ? WHERE username = ?', 
-                             (hashed_new, st.session_state.username))
-                    conn.commit()
-                    conn.close()
-                    st.success("Senha alterada com sucesso!")
-            else:
-                st.error("Por favor, preencha todos os campos.")
-
-# Página de relatórios
-def reports_page():
-    if not st.session_state.logged_in:
-        return
-    st.header("📊 Relatórios Financeiros")
+# Dashboard
+def show_dashboard():
+    st.title("📊 Dashboard Financeiro")
     
     # Obter dados
     expenses = get_expenses(st.session_state.username)
     incomes = get_incomes(st.session_state.username)
     
-    if not expenses and not incomes:
-        st.info("Nenhum dado financeiro disponível para gerar relatórios.")
-        return
+    # Converter para DataFrame
+    expense_data = []
+    for expense in expenses:
+        expense_data.append({
+            'Data': expense[1],
+            'Origem': expense[2],
+            'Valor': expense[3],
+            'Categoria': expense[4]
+        })
     
-    # Filtros
+    income_data = []
+    for income in incomes:
+        income_data.append({
+            'Data': income[1],
+            'Tipo': income[2],
+            'Descrição': income[3],
+            'Valor': income[4]
+        })
+    
+    expense_df = pd.DataFrame(expense_data) if expense_data else pd.DataFrame(columns=['Data', 'Origem', 'Valor', 'Categoria'])
+    income_df = pd.DataFrame(income_data) if income_data else pd.DataFrame(columns=['Data', 'Tipo', 'Descrição', 'Valor'])
+    
+    # Calcular métricas
+    total_expenses = expense_df['Valor'].sum() if not expense_df.empty else 0
+    total_income = income_df['Valor'].sum() if not income_df.empty else 0
+    balance = total_income - total_expenses
+    
+    # Exibir métricas
     col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total de Receitas", f"R$ {total_income:,.2f}")
+    with col2:
+        st.metric("Total de Despesas", f"R$ {total_expenses:,.2f}")
+    with col3:
+        st.metric("Saldo", f"R$ {balance:,.2f}", delta=f"{balance:,.2f}")
+    
+    # Filtros de data
+    st.subheader("Filtros")
+    col1, col2 = st.columns(2)
     
     with col1:
-        start_date = st.date_input("Data Inicial", 
-                                 value=date.today().replace(day=1),
-                                 max_value=date.today())
+        start_date = st.date_input("Data inicial", value=date.today().replace(day=1))
+    with col2:
+        end_date = st.date_input("Data final", value=date.today())
+    
+    # Aplicar filtros
+    if not expense_df.empty:
+        expense_df['Data'] = pd.to_datetime(expense_df['Data'])
+        filtered_expenses = expense_df[(expense_df['Data'] >= pd.to_datetime(start_date)) & 
+                                      (expense_df['Data'] <= pd.to_datetime(end_date))]
+    else:
+        filtered_expenses = expense_df
+    
+    if not income_df.empty:
+        income_df['Data'] = pd.to_datetime(income_df['Data'])
+        filtered_incomes = income_df[(income_df['Data'] >= pd.to_datetime(start_date)) & 
+                                    (income_df['Data'] <= pd.to_datetime(end_date))]
+    else:
+        filtered_incomes = income_df
+    
+    # Gráficos
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if not filtered_expenses.empty:
+            st.subheader("Despesas por Categoria")
+            expenses_by_category = filtered_expenses.groupby('Categoria')['Valor'].sum().reset_index()
+            fig = px.pie(expenses_by_category, values='Valor', names='Categoria')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Nenhuma despesa registrada no período selecionado.")
     
     with col2:
-        end_date = st.date_input("Data Final", 
-                               value=date.today(),
-                               max_value=date.today())
+        if not filtered_incomes.empty:
+            st.subheader("Receitas por Tipo")
+            incomes_by_type = filtered_incomes.groupby('Tipo')['Valor'].sum().reset_index()
+            fig = px.pie(incomes_by_type, values='Valor', names='Tipo')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Nenhuma receita registrada no período selecionado.")
     
-    with col3:
-        report_type = st.selectbox("Tipo de Relatório", 
-                                 ["Completo", "Apenas Despesas", "Apenas Receitas"])
+    # Tabela de últimas transações
+    st.subheader("Últimas Transações")
+    
+    # Combinar despesas e receitas
+    all_transactions = []
+    
+    for expense in expenses[-10:]:  # Últimas 10 despesas
+        all_transactions.append({
+            'Data': format_brazilian_date(expense[1]),
+            'Tipo': 'Despesa',
+            'Descrição': expense[2],
+            'Categoria': expense[4],
+            'Valor': -expense[3]
+        })
+    
+    for income in incomes[-10:]:  # Últimas 10 receitas
+        all_transactions.append({
+            'Data': format_brazilian_date(income[1]),
+            'Tipo': 'Receita',
+            'Descrição': income[3],
+            'Categoria': income[2],
+            'Valor': income[4]
+        })
+    
+    # Ordenar por data (mais recente primeiro)
+    if all_transactions:
+        all_transactions.sort(key=lambda x: datetime.strptime(x['Data'], '%d/%m/%Y'), reverse=True)
+        transactions_df = pd.DataFrame(all_transactions[:10])  # Mostrar apenas as 10 mais recentes
+        st.dataframe(transactions_df, use_container_width=True)
+    else:
+        st.info("Nenhuma transação registrada.")
+
+# Formulário de despesa
+def show_expense_form():
+    st.title("💸 Registrar Despesa")
+    
+    with st.form("expense_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            date = st.date_input("Data*", value=date.today())
+            origin = st.text_input("Origem/Fornecedor*")
+            value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
+        
+        with col2:
+            category = st.selectbox("Categoria*", 
+                                  ["Aluguel", "Água", "Luz", "Internet", "Manutenção", 
+                                   "Material", "Salários", "Outros"])
+            
+            # Opções para CPF/CNPJ
+            tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
+            
+            if tipo_pessoa != "Não informar":
+                if tipo_pessoa == "Física":
+                    cpf_cnpj = st.text_input("CPF do Fornecedor", placeholder="000.000.000-00")
+                    if cpf_cnpj and not validate_cpf(cpf_cnpj):
+                        st.error("CPF inválido. Por favor, verifique o número.")
+                else:
+                    cpf_cnpj = st.text_input("CNPJ do Fornecedor", placeholder="00.000.000/0000-00")
+                    if cpf_cnpj and not validate_cnpj(cpf_cnpj):
+                        st.error("CNPJ inválido. Por favor, verifique o número.")
+            else:
+                cpf_cnpj = None
+        
+        submitted = st.form_submit_button("Registrar Despesa")
+        
+        if submitted:
+            if origin and value > 0:
+                try:
+                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
+                    if tipo_pessoa == "Não informar":
+                        add_expense(
+                            date.strftime("%Y-%m-%d"),
+                            origin,
+                            value,
+                            category,
+                            st.session_state.username
+                        )
+                    else:
+                        add_expense(
+                            date.strftime("%Y-%m-%d"),
+                            origin,
+                            value,
+                            category,
+                            st.session_state.username,
+                            re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None,
+                            tipo_pessoa
+                        )
+                    
+                    st.success("Despesa registrada com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao registrar despesa: {str(e)}")
+            else:
+                st.error("Por favor, preencha todos os campos obrigatórios.")
+
+# Formulário de receita
+def show_income_form():
+    st.title("💰 Registrar Receita")
+    
+    with st.form("income_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            date = st.date_input("Data*", value=date.today())
+            type_income = st.selectbox("Tipo de Receita*", 
+                                     ["Dízimo", "Oferta", "Doação", "Evento", "Outros"])
+            value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
+        
+        with col2:
+            description = st.text_input("Descrição*")
+            
+            # Opções para CPF/CNPJ
+            tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
+            
+            if tipo_pessoa != "Não informar":
+                if tipo_pessoa == "Física":
+                    cpf_cnpj = st.text_input("CPF do Doador", placeholder="000.000.000-00")
+                    if cpf_cnpj and not validate_cpf(cpf_cnpj):
+                        st.error("CPF inválido. Por favor, verifique o número.")
+                else:
+                    cpf_cnpj = st.text_input("CNPJ do Doador", placeholder="00.000.000/0000-00")
+                    if cpf_cnpj and not validate_cnpj(cpf_cnpj):
+                        st.error("CNPJ inválido. Por favor, verifique o número.")
+            else:
+                cpf_cnpj = None
+        
+        submitted = st.form_submit_button("Registrar Receita")
+        
+        if submitted:
+            if description and value > 0:
+                try:
+                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
+                    if tipo_pessoa == "Não informar":
+                        add_income(
+                            date.strftime("%Y-%m-%d"),
+                            type_income,
+                            description,
+                            value,
+                            st.session_state.username
+                        )
+                    else:
+                        add_income(
+                            date.strftime("%Y-%m-%d"),
+                            type_income,
+                            description,
+                            value,
+                            st.session_state.username,
+                            re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None,
+                            tipo_pessoa
+                        )
+                    
+                    st.success("Receita registrada com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao registrar receita: {str(e)}")
+            else:
+                st.error("Por favor, preencha todos os campos obrigatórios.")
+
+# Relatórios
+def show_reports():
+    st.title("📋 Relatórios Financeiros")
+    
+    # Obter dados
+    expenses = get_expenses(st.session_state.username)
+    incomes = get_incomes(st.session_state.username)
+    
+    # Filtros
+    st.subheader("Filtros")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        start_date = st.date_input("Data inicial", value=date.today().replace(day=1))
+    with col2:
+        end_date = st.date_input("Data final", value=date.today())
     
     # Filtrar dados
     filtered_expenses = []
+    for expense in expenses:
+        expense_date = datetime.strptime(expense[1], "%Y-%m-%d").date()
+        if start_date <= expense_date <= end_date:
+            filtered_expenses.append(expense)
+    
     filtered_incomes = []
-    
-    if expenses:
-        for expense in expenses:
-            expense_date = datetime.strptime(expense[1], "%Y-%m-%d").date()
-            if start_date <= expense_date <= end_date:
-                filtered_expenses.append(expense)
-    
-    if incomes:
-        for income in incomes:
-            income_date = datetime.strptime(income[1], "%Y-%m-%d").date()
-            if start_date <= income_date <= end_date:
-                filtered_incomes.append(income)
+    for income in incomes:
+        income_date = datetime.strptime(income[1], "%Y-%m-%d").date()
+        if start_date <= income_date <= end_date:
+            filtered_incomes.append(income)
     
     # Calcular totais
-    total_expenses = sum(expense[3] for expense in filtered_expenses) if filtered_expenses else 0
-    total_income = sum(income[4] for income in filtered_incomes) if filtered_incomes else 0
+    total_expenses = sum(expense[3] for expense in filtered_expenses)
+    total_income = sum(income[4] for income in filtered_incomes)
     balance = total_income - total_expenses
     
     # Exibir resumo
-    st.subheader("📈 Resumo Financeiro")
-    
+    st.subheader("Resumo do Período")
     col1, col2, col3 = st.columns(3)
+    col1.metric("Total Receitas", f"R$ {total_income:,.2f}")
+    col2.metric("Total Despesas", f"R$ {total_expenses:,.2f}")
+    col3.metric("Saldo", f"R$ {balance:,.2f}", delta=f"{balance:,.2f}")
     
-    with col1:
-        st.metric("Total de Receitas", f"R$ {total_income:,.2f}")
-    
-    with col2:
-        st.metric("Total de Despesas", f"R$ {total_expenses:,.2f}")
-    
-    with col3:
-        st.metric("Saldo", f"R$ {balance:,.2f}", 
-                 delta=f"{'Superavit' if balance >= 0 else 'Deficit'}")
-    
-    # Gráficos
-    if filtered_expenses or filtered_incomes:
-        tab1, tab2, tab3 = st.tabs(["📋 Detalhado", "📈 Gráficos", "💾 Exportar"])
-        
-        with tab1:
-            # Dados detalhados
-            if report_type in ["Completo", "Apenas Despesas"] and filtered_expenses:
-                st.subheader("Despesas Detalhadas")
-                expense_data = []
-                for expense in filtered_expenses:
-                    # Verificar se os índices existem antes de acessá-los
-                    cpf_cnpj = expense[6] if len(expense) > 6 else None
-                    tipo_pessoa = expense[7] if len(expense) > 7 else None
-                    
-                    expense_data.append({
-                        "Data": format_brazilian_date(expense[1]),
-                        "Origem": expense[2],
-                        "Valor": expense[3],
-                        "Categoria": expense[4],
-                        "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
-                        "Tipo Pessoa": tipo_pessoa or "N/A"
-                    })
-                
-                expense_df = pd.DataFrame(expense_data)
-                st.dataframe(expense_df, use_container_width=True, hide_index=True)
-            
-            if report_type in ["Completo", "Apenas Receitas"] and filtered_incomes:
-                st.subheader("Receitas Detalhadas")
-                income_data = []
-                for income in filtered_incomes:
-                    # Verificar se os índices existem antes de acessá-los
-                    cpf_cnpj = income[6] if len(income) > 6 else None
-                    tipo_pessoa = income[7] if len(income) > 7 else None
-                    
-                    income_data.append({
-                        "Data": format_brazilian_date(income[1]),
-                        "Tipo": income[2],
-                        "Descrição": income[3],
-                        "Valor": income[4],
-                        "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
-                        "Tipo Pessoa": tipo_pessoa or "N/A"
-                    })
-                
-                income_df = pd.DataFrame(income_data)
-                st.dataframe(income_df, use_container_width=True, hide_index=True)
-        
-        with tab2:
-            # Gráficos
-            if filtered_expenses:
-                st.subheader("Análise de Despesas")
-                
-                # Gráfico de pizza por categoria
-                if len(filtered_expenses) > 0:
-                    expense_categories = {}
-                    for expense in filtered_expenses:
-                        category = expense[4]
-                        expense_categories[category] = expense_categories.get(category, 0) + expense[3]
-                    
-                    if expense_categories:
-                        fig1 = px.pie(
-                            values=list(expense_categories.values()),
-                            names=list(expense_categories.keys()),
-                            title="Distribuição de Despesas por Categoria"
-                        )
-                        st.plotly_chart(fig1, use_container_width=True)
-            
-            if filtered_incomes:
-                st.subheader("Análise de Receitas")
-                
-                # Gráfico de pizza por tipo
-                if len(filtered_incomes) > 0:
-                    income_types = {}
-                    for income in filtered_incomes:
-                        income_type = income[2]
-                        income_types[income_type] = income_types.get(income_type, 0) + income[4]
-                    
-                    if income_types:
-                        fig2 = px.pie(
-                            values=list(income_types.values()),
-                            names=list(income_types.keys()),
-                            title="Distribuição de Receitas por Tipo"
-                        )
-                        st.plotly_chart(fig2, use_container_width=True)
-            
-            # Gráfico de linha temporal
-            if filtered_expenses or filtered_incomes:
-                st.subheader("Evolução Temporal")
-                
-                # Preparar dados temporais
-                time_data = {}
-                for expense in filtered_expenses:
-                    date_str = expense[1]
-                    time_data[date_str] = time_data.get(date_str, {'receitas': 0, 'despesas': 0})
-                    time_data[date_str]['despesas'] += expense[3]
-                
-                for income in filtered_incomes:
-                    date_str = income[1]
-                    time_data[date_str] = time_data.get(date_str, {'receitas': 0, 'despesas': 0})
-                    time_data[date_str]['receitas'] += income[4]
-                
-                # Criar DataFrame para o gráfico
-                dates = sorted(time_data.keys())
-                receitas = [time_data[date]['receitas'] for date in dates]
-                despesas = [time_data[date]['despesas'] for date in dates]
-                saldos = [receitas[i] - despesas[i] for i in range(len(dates))]
-                
-                # Formatar datas para exibição
-                display_dates = [format_brazilian_date(date) for date in dates]
-                
-                fig3 = go.Figure()
-                fig3.add_trace(go.Scatter(x=display_dates, y=receitas, mode='lines+markers', name='Receitas', line=dict(color='green')))
-                fig3.add_trace(go.Scatter(x=display_dates, y=despesas, mode='lines+markers', name='Despesas', line=dict(color='red')))
-                fig3.add_trace(go.Scatter(x=display_dates, y=saldos, mode='lines+markers', name='Saldo', line=dict(color='blue')))
-                
-                fig3.update_layout(
-                    title="Evolução Financeira ao Longo do Tempo",
-                    xaxis_title="Data",
-                    yaxis_title="Valor (R$)",
-                    hovermode='x unified'
-                )
-                
-                st.plotly_chart(fig3, use_container_width=True)
-        
-        with tab3:
-            # Exportar dados
-            st.subheader("Exportar Relatório")
-            
-            export_format = st.radio("Formato de Exportação", 
-                                   ["Excel", "HTML com Logo", "CSV"])
-            
-            if st.button("📥 Exportar Relatório"):
-                if export_format == "Excel":
-                    excel_data = export_to_excel(filtered_expenses, filtered_incomes)
-                    st.download_button(
-                        label="⬇️ Baixar Excel",
-                        data=excel_data,
-                        file_name=f"relatorio_financeiro_{date.today()}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                
-                elif export_format == "HTML com Logo":
-                    html_content = export_to_html_with_logo(filtered_expenses, filtered_incomes)
-                    st.download_button(
-                        label="⬇️ Baixar HTML",
-                        data=html_content,
-                        file_name=f"relatorio_financeiro_{date.today()}.html",
-                        mime="text/html"
-                    )
-                
-                elif export_format == "CSV":
-                    # Combinar dados
-                    all_data = []
-                    for expense in filtered_expenses:
-                        # Verificar se os índices existem antes de acessá-los
-                        cpf_cnpj = expense[6] if len(expense) > 6 else None
-                        tipo_pessoa = expense[7] if len(expense) > 7 else None
-                        
-                        all_data.append({
-                            'Tipo': 'Despesa',
-                            'Data': format_brazilian_date(expense[1]),
-                            'Descrição': expense[2],
-                            'Valor': -expense[3],
-                            'Categoria': expense[4],
-                            'CPF/CNPJ': format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
-                            'Tipo Pessoa': tipo_pessoa or "N/A"
-                        })
-                    
-                    for income in filtered_incomes:
-                        # Verificar se os índices existem antes de acessá-los
-                        cpf_cnpj = income[6] if len(income) > 6 else None
-                        tipo_pessoa = income[7] if len(income) > 7 else None
-                        
-                        all_data.append({
-                            'Tipo': 'Receita',
-                            'Data': format_brazilian_date(income[1]),
-                            'Descrição': income[3],
-                            'Valor': income[4],
-                            'Categoria': income[2],
-                            'CPF/CNPJ': format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
-                            'Tipo Pessoa': tipo_pessoa or "N/A"
-                        })
-                    
-                    if all_data:
-                        df = pd.DataFrame(all_data)
-                        csv = df.to_csv(index=False, sep=';')
-                        st.download_button(
-                            label="⬇️ Baixar CSV",
-                            data=csv,
-                            file_name=f"relatorio_financeiro_{date.today()}.csv",
-                            mime="text/csv"
-                        )
-    else:
-        st.warning("Nenhum dado encontrado para o período selecionado.")
-
-# Página de receitas - CORRIGIDA com autocompletar
-def incomes_page():
-    if not st.session_state.logged_in:
-        return
-        
-    st.header("💵 Gestão de Receitas")
-    
-    # Formulário para adicionar receita
-    with st.form("add_income_form"):
-        st.subheader("➕ Adicionar Nova Receita")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            income_date = st.date_input("Data da Receita", value=date.today())
-            income_type = st.selectbox("Tipo de Receita*", 
-                                     ["Dízimo", "Oferta", "Doação", "Evento", "Outros"])
-        
-        with col2:
-            income_value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
-            income_description = st.text_input("Descrição*", placeholder="Ex: Oferta do culto de domingo")
-        
-       
-    # Lista de receitas - CORRIGIDA
-    st.subheader("📋 Receitas Cadastradas")
-    incomes = get_incomes(st.session_state.username)
-    
-    if incomes:
-        income_data = []
-        for income in incomes:
-            # Verificar se os índices existem antes de acessá-los
-            cpf_cnpj = income[6] if len(income) > 6 else None
-            tipo_pessoa = income[7] if len(income) > 7 else None
-            
-            income_data.append({
-                "ID": income[0],
-                "Data": format_brazilian_date(income[1]),
-                "Tipo": income[2],
-                "Descrição": income[3],
-                "Valor": income[4],
-                "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
-                "Tipo Pessoa": tipo_pessoa or "N/A"
-            })
-        
-        income_df = pd.DataFrame(income_data)
-        
-        # Exibir tabela com opção de remover
-        edited_df = st.dataframe(income_df, use_container_width=True, hide_index=True)
-        
-        # Opção para remover receita
-        income_to_delete = st.selectbox("Selecionar receita para remover", 
-                                      [f"{income[0]} - {format_brazilian_date(income[1])} - {income[2]} - R$ {income[4]:.2f}" 
-                                       for income in incomes],
-                                      key="delete_income_select")
-        
-        if st.button("🗑️ Remover Receita Selecionada", type="secondary"):
-            if income_to_delete:
-                income_id = int(income_to_delete.split(" - ")[0])
-                delete_income(income_id, st.session_state.username)
-                st.success("Receita removida com sucesso!")
-                rerun()
-    else:
-        st.info("Nenhuma receita cadastrada.")
-
-    # Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
-    st.subheader("Informações do Contribuinte (Opcional)") #certo
-    contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
-
-    if contrib_tipo != "Não informar":
-        col3, col4 = st.columns(2)
-            with col3:
-            # Buscar CPF/CNPJ cadastrados para autocompletar
-            cpf_cnpj_cadastrados = get_all_cpf_cnpj()
-            opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
-        
-            if contrib_tipo == "Física":
-            cpf_selecionado = st.selectbox("CPF do Contribuinte", 
-                                         [""] + opcoes_cpf_cnpj,
-                                         format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-            
-            if cpf_selecionado:
-                contrib_cpf = st.text_input("CPF (editar se necessário)", 
-                                          value=cpf_selecionado,
-                                          placeholder="000.000.000-00")
-                # Auto-preencher o nome se CPF foi selecionado
-                contrib_name = st.text_input("Nome do Contribuinte", 
-                                           value=cpf_cnpj_cadastrados.get(cpf_selecionado, ""),
-                                           placeholder="Nome completo")
-            else:
-                contrib_cpf = st.text_input("CPF do Contribuinte", 
-                                          placeholder="000.000.000-00")
-                contrib_name = st.text_input("Nome do Contribuinte", placeholder="Nome completo")
-            contrib_identifier = contrib_cpf
-        else:
-            cnpj_selecionado = st.selectbox("CNPJ do Contribuinte", 
-                                          [""] + opcoes_cpf_cnpj,
-                                          format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-            
-            if cnpj_selecionado:
-                contrib_cnpj = st.text_input("CNPJ (editar se necessário)", 
-                                           value=cnpj_selecionado,
-                                           placeholder="00.000.000/0000-00")
-                # Auto-preencher o nome se CNPJ foi selecionado
-                contrib_name = st.text_input("Nome/Razão Social", 
-                                           value=cpf_cnpj_cadastrados.get(cnpj_selecionado, ""),
-                                           placeholder="Razão social")
-            else:
-                contrib_cnpj = st.text_input("CNPJ do Contribuinte", 
-                                           placeholder="00.000.000/0000-00")
-                contrib_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
-            contrib_identifier = contrib_cnpj    
-
-# Página de despesas - CORRIGIDA com autocompletar
-def expenses_page():
-    if not st.session_state.logged_in:
-        return
-    
-    st.header("💸 Gestão de Despesas")
-    
-    # Formulário para adicionar despesa
-    with st.form("add_expense_form"):
-        st.subheader("➕ Adicionar Nova Despesa")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            expense_date = st.date_input("Data da Despesa", value=date.today())
-            expense_origin = st.text_input("Origem/Fornecedor*", placeholder="Ex: Mercado XYZ")
-        
-        with col2:
-            expense_value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
-            expense_category = st.selectbox("Categoria*", 
-                                          ["Alimentação", "Transporte", "Utilidades", "Manutenção", 
-                                           "Eventos", "Equipamentos", "Outros"])
-        
-        # Informações do fornecedor (opcional) - COM AUTOCOMPLETAR
-        st.subheader("Informações do Fornecedor (Opcional)")
-        supplier_tipo = st.radio("Tipo de Fornecedor", ["Física", "Jurídica", "Não informar"], index=2)
-        
-        if supplier_tipo != "Não informar":
-            col3, col4 = st.columns(2)
-            with col3:
-                # Buscar CPF/CNPJ cadastrados para autocompletar
-                cpf_cnpj_cadastrados = get_all_cpf_cnpj()
-                opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
-                
-                if supplier_tipo == "Física":
-                    cpf_selecionado = st.selectbox("CPF do Fornecedor", 
-                                                 [""] + opcoes_cpf_cnpj,
-                                                 format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-                    
-                    if cpf_selecionado:
-                        supplier_cpf = st.text_input("CPF (editar se necessário)", 
-                                                   value=cpf_selecionado,
-                                                   placeholder="000.000.000-00")
-                        # Auto-preencher o nome se CPF foi selecionado
-                        supplier_name = st.text_input("Nome do Fornecedor", 
-                                                    value=cpf_cnpj_cadastrados.get(cpf_selecionado, ""),
-                                                    placeholder="Nome completo")
-                    else:
-                        supplier_cpf = st.text_input("CPF do Fornecedor", 
-                                                   placeholder="000.000.000-00")
-                        supplier_name = st.text_input("Nome do Fornecedor", placeholder="Nome completo")
-                    supplier_identifier = supplier_cpf
-                else:
-                    cnpj_selecionado = st.selectbox("CNPJ do Fornecedor", 
-                                                  [""] + opcoes_cpf_cnpj,
-                                                  format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-                    
-                    if cnpj_selecionado:
-                        supplier_cnpj = st.text_input("CNPJ (editar se necessário)", 
-                                                    value=cnpj_selecionado,
-                                                    placeholder="00.000.000/0000-00")
-                        # Auto-preencher o nome se CNPJ foi selecionado
-                        supplier_name = st.text_input("Nome/Razão Social", 
-                                                    value=cpf_cnpj_cadastrados.get(cnpj_selecionado, ""),
-                                                    placeholder="Razão social")
-                    else:
-                        supplier_cnpj = st.text_input("CNPJ do Fornecedor", 
-                                                    placeholder="00.000.000/0000-00")
-                        supplier_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
-                    supplier_identifier = supplier_cnpj
-        
-        if st.form_submit_button("Adicionar Despesa"):
-            if expense_value and expense_origin:
-                # Validar CPF/CNPJ se fornecido
-                cpf_cnpj = None
-                tipo_pessoa = None
-                
-                if supplier_tipo != "Não informar" and supplier_identifier:
-                    cpf_cnpj_clean = re.sub(r'[^0-9]', '', supplier_identifier)
-                    
-                    if supplier_tipo == "Física":
-                        if validate_cpf(cpf_cnpj_clean):
-                            cpf_cnpj = cpf_cnpj_clean
-                            tipo_pessoa = "Física"
-                        else:
-                            st.error("CPF inválido. A despesa será cadastrada sem informações do fornecedor.")
-                    else:
-                        if validate_cnpj(cpf_cnpj_clean):
-                            cpf_cnpj = cpf_cnpj_clean
-                            tipo_pessoa = "Jurídica"
-                        else:
-                            st.error("CNPJ inválido. A despesa será cadastrada sem informações do fornecedor.")
-                
-                add_expense(
-                    expense_date.strftime("%Y-%m-%d"),
-                    expense_origin,
-                    expense_value,
-                    expense_category,
-                    st.session_state.username,
-                    cpf_cnpj,
-                    tipo_pessoa
-                )
-                st.success("Despesa adicionada com sucesso!")
-                st.rerun()
-            else:
-                st.error("Por favor, preencha todos os campos obrigatórios.")
-    
-    # Lista de despesas - CORRIGIDA
-    st.subheader("📋 Despesas Cadastradas")
-    expenses = get_expenses(st.session_state.username)
-    
-    if expenses:
+    # Tabela de despesas
+    st.subheader("Despesas Detalhadas")
+    if filtered_expenses:
         expense_data = []
-        for expense in expenses:
-            # Verificar se os índices existem antes de acessá-los
+        for expense in filtered_expenses:
+            # Verificar se os índices existen antes de acessá-los
             cpf_cnpj = expense[6] if len(expense) > 6 else None
             tipo_pessoa = expense[7] if len(expense) > 7 else None
             
             expense_data.append({
-                "ID": expense[0],
-                "Data": format_brazilian_date(expense[1]),
-                "Origem": expense[2],
-                "Valor": expense[3],
-                "Categoria": expense[4],
-                "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
-                "Tipo Pessoa": tipo_pessoa or "N/A"
+                'ID': expense[0],
+                'Data': format_brazilian_date(expense[1]),
+                'Origem': expense[2],
+                'Valor': expense[3],
+                'Categoria': expense[4],
+                'CPF/CNPJ': cpf_cnpj,
+                'Tipo Pessoa': tipo_pessoa
             })
         
         expense_df = pd.DataFrame(expense_data)
-        
-        # Exibir tabela com opção de remover
         st.dataframe(expense_df, use_container_width=True, hide_index=True)
-        
-        # Opção para remover despesa
-        expense_to_delete = st.selectbox("Selecionar despesa para remover", 
-                                       [f"{expense[0]} - {format_brazilian_date(expense[1])} - {expense[2]} - R$ {expense[3]:.2f}" 
-                                        for expense in expenses],
-                                       key="delete_expense_select")
-        
-        if st.button("🗑️ Remover Despesa Selecionada", type="secondary"):
-            if expense_to_delete:
-                expense_id = int(expense_to_delete.split(" - ")[0])
-                delete_expense(expense_id, st.session_state.username)
-                st.success("Despesa removida com sucesso!")
-                st.rerun()
     else:
-        st.info("Nenhuma despesa cadastrada.")
- 
-# Página de dashboard
-def dashboard_page():
-    if not st.session_state.logged_in:
-        return
-    st.header("📊 Dashboard Financeiro")
+        st.info("Nenhuma despesa no período selecionado.")
     
-    # Obter dados
-    expenses = get_expenses(st.session_state.username)
-    incomes = get_incomes(st.session_state.username)
+    # Tabela de receitas
+    st.subheader("Receitas Detalhadas")
+    if filtered_incomes:
+        income_data = []
+        for income in filtered_incomes:
+            # Verificar se os índices existen antes de acessá-los
+            cpf_cnpj = income[6] if len(income) > 6 else None
+            tipo_pessoa = income[7] if len(income) > 7 else None
+            
+            income_data.append({
+                'ID': income[0],
+                'Data': format_brazilian_date(income[1]),
+                'Tipo': income[2],
+                'Descrição': income[3],
+                'Valor': income[4],
+                'CPF/CNPJ': cpf_cnpj,
+                'Tipo Pessoa': tipo_pessoa
+            })
+        
+        income_df = pd.DataFrame(income_data)
+        st.dataframe(income_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("Nenhuma receita no período selecionado.")
     
-    if not expenses and not incomes:
-        st.info("Bem-vindo ao Sistema de Controle Financeiro! Comece adicionando suas primeiras receitas e despesas.")
-        return
+    # Opções de exportação
+    st.subheader("Exportar Relatório")
     
-    # Calcular totais
-    total_expenses = sum(expense[3] for expense in expenses) if expenses else 0
-    total_income = sum(income[4] for income in incomes) if incomes else 0
-    balance = total_income - total_expenses
-    
-    # Métricas principais
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("💰 Total de Receitas", f"R$ {total_income:,.2f}")
+        if st.button("📄 Exportar para Excel"):
+            excel_data = export_to_excel(filtered_expenses, filtered_incomes)
+            st.download_button(
+                label="⬇️ Baixar Arquivo Excel",
+                data=excel_data,
+                file_name=f"relatorio_financeiro_{date.today().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
     
     with col2:
-        st.metric("💸 Total de Despesas", f"R$ {total_expenses:,.2f}")
+        if st.button("🌐 Exportar para HTML"):
+            html_content = export_to_html_with_logo(filtered_expenses, filtered_incomes)
+            st.download_button(
+                label="⬇️ Baixar Relatório HTML",
+                data=html_content,
+                file_name=f"relatorio_financeiro_{date.today().strftime('%Y%m%d')}.html",
+                mime="text/html"
+            )
     
     with col3:
-        st.metric("📈 Saldo Atual", f"R$ {balance:,.2f}", 
-                 delta=f"{'Superavit' if balance >= 0 else 'Deficit'}")
+        if st.button("📊 Gerar Gráficos"):
+            show_charts(filtered_expenses, filtered_incomes)
+
+# Função para mostrar gráficos
+def show_charts(expenses, incomes):
+    st.title("📊 Análise Gráfica")
     
-    # Gráficos
-    if expenses or incomes:
+    # Converter para DataFrame
+    expense_data = []
+    for expense in expenses:
+        expense_data.append({
+            'Data': expense[1],
+            'Origem': expense[2],
+            'Valor': expense[3],
+            'Categoria': expense[4]
+        })
+    
+    income_data = []
+    for income in incomes:
+        income_data.append({
+            'Data': income[1],
+            'Tipo': income[2],
+            'Descrição': income[3],
+            'Valor': income[4]
+        })
+    
+    expense_df = pd.DataFrame(expense_data) if expense_data else pd.DataFrame()
+    income_df = pd.DataFrame(income_data) if income_data else pd.DataFrame()
+    
+    # Gráfico de evolução temporal
+    if not expense_df.empty or not income_df.empty:
+        st.subheader("Evolução Temporal")
+        
+        # Preparar dados para o gráfico de linha
+        timeline_data = []
+        
+        if not expense_df.empty:
+            expense_df['Data'] = pd.to_datetime(expense_df['Data'])
+            daily_expenses = expense_df.groupby('Data')['Valor'].sum().reset_index()
+            daily_expenses['Tipo'] = 'Despesa'
+            timeline_data.append(daily_expenses)
+        
+        if not income_df.empty:
+            income_df['Data'] = pd.to_datetime(income_df['Data'])
+            daily_incomes = income_df.groupby('Data')['Valor'].sum().reset_index()
+            daily_incomes['Tipo'] = 'Receita'
+            timeline_data.append(daily_incomes)
+        
+        if timeline_data:
+            timeline_df = pd.concat(timeline_data)
+            fig = px.line(timeline_df, x='Data', y='Valor', color='Tipo', 
+                         title='Evolução de Receitas e Despesas ao Longo do Tempo')
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Gráficos de pizza
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if not expense_df.empty:
+            st.subheader("Distribuição de Despesas por Categoria")
+            expenses_by_category = expense_df.groupby('Categoria')['Valor'].sum().reset_index()
+            fig = px.pie(expenses_by_category, values='Valor', names='Categoria')
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        if not income_df.empty:
+            st.subheader("Distribuição de Receitas por Tipo")
+            incomes_by_type = income_df.groupby('Tipo')['Valor'].sum().reset_index()
+            fig = px.pie(incomes_by_type, values='Valor', names='Tipo')
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Comparativo mensal
+    if not expense_df.empty or not income_df.empty:
+        st.subheader("Comparativo Mensal")
+        
+        # Preparar dados mensais
+        monthly_data = []
+        
+        if not expense_df.empty:
+            expense_df['Mês'] = expense_df['Data'].dt.to_period('M')
+            monthly_expenses = expense_df.groupby('Mês')['Valor'].sum().reset_index()
+            monthly_expenses['Tipo'] = 'Despesa'
+            monthly_data.append(monthly_expenses)
+        
+        if not income_df.empty:
+            income_df['Mês'] = income_df['Data'].dt.to_period('M')
+            monthly_incomes = income_df.groupby('Mês')['Valor'].sum().reset_index()
+            monthly_incomes['Tipo'] = 'Receita'
+            monthly_data.append(monthly_incomes)
+        
+        if monthly_data:
+            monthly_df = pd.concat(monthly_data)
+            monthly_df['Mês'] = monthly_df['Mês'].astype(str)
+            
+            fig = px.bar(monthly_df, x='Mês', y='Valor', color='Tipo', barmode='group',
+                        title='Comparativo Mensal de Receitas e Despesas')
+            st.plotly_chart(fig, use_container_width=True)
+
+# Configurações
+def show_settings():
+    st.title("⚙️ Configurações")
+    
+    # Informações do usuário
+    st.subheader("Informações do Usuário")
+    
+    user_info = get_user_info(st.session_state.username)
+    if user_info:
+        nome_completo, cpf_cnpj, tipo_pessoa = user_info
+        
+        with st.form("user_settings"):
+            new_nome = st.text_input("Nome Completo", value=nome_completo if nome_completo else "")
+            
+            if tipo_pessoa:
+                st.write(f"Tipo de Pessoa: {tipo_pessoa}")
+                if tipo_pessoa == "Física":
+                    st.write(f"CPF: {format_cpf(cpf_cnpj) if cpf_cnpj else 'Não informado'}")
+                else:
+                    st.write(f"CNPJ: {format_cnpj(cpf_cnpj) if cpf_cnpj else 'Não informado'}")
+            
+            submitted = st.form_submit_button("Atualizar Informações")
+            
+            if submitted:
+                if new_nome:
+                    update_user_info(st.session_state.username, new_nome, cpf_cnpj, tipo_pessoa)
+                    st.success("Informações atualizadas com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("O nome completo é obrigatório.")
+    
+    # Importação/Exportação de dados
+    st.subheader("Importar/Exportar Dados")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Importar Dados**")
+        
+        import_option = st.radio("Tipo de Dados", ["Despesas", "Receitas"])
+        
+        uploaded_file = st.file_uploader("Selecionar arquivo", type=["xlsx", "xls", "csv"])
+        
+        if uploaded_file:
+            if st.button("Importar Dados"):
+                with st.spinner("Importando dados..."):
+                    success, message = import_from_spreadsheet(
+                        uploaded_file, 
+                        st.session_state.username, 
+                        is_income=(import_option == "Receitas")
+                    )
+                    
+                    if success:
+                        st.success(message)
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error(message)
+    
+    with col2:
+        st.write("**Exportar Dados**")
+        
+        # Obter todos os dados
+        all_expenses = get_expenses(st.session_state.username)
+        all_incomes = get_incomes(st.session_state.username)
+        
+        if st.button("Exportar Todos os Dados"):
+            excel_data = export_to_excel(all_expenses, all_incomes)
+            st.download_button(
+                label="⬇️ Baixar Arquivo Excel",
+                data=excel_data,
+                file_name=f"dados_completos_{date.today().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+    
+    # Limpar dados
+    st.subheader("Limpar Dados")
+    st.warning("⚠️ Esta ação não pode ser desfeita!")
+    
+    if st.button("❌ Limpar Todos os Dados"):
+        # Implementar lógica para limpar dados do usuário atual
+        st.error("Funcionalidade ainda não implementada.")
+
+# Gerenciamento de usuários (apenas admin)
+def show_user_management():
+    st.title("👥 Gerenciamento de Usuários")
+    
+    # Listar usuários
+    st.subheader("Usuários Cadastrados")
+    
+    users = get_all_users()
+    if users:
+        user_data = []
+        for user in users:
+            # Verificar estrutura dos dados retornados
+            if len(user) >= 4:
+                username, nome_completo, cpf_cnpj, tipo_pessoa = user[0], user[1], user[2], user[3]
+                user_data.append({
+                    'Usuário': username,
+                    'Nome': nome_completo,
+                    'CPF/CNPJ': cpf_cnpj,
+                    'Tipo': tipo_pessoa
+                })
+            elif len(user) >= 2:
+                username, nome_completo = user[0], user[1]
+                user_data.append({
+                    'Usuário': username,
+                    'Nome': nome_completo,
+                    'CPF/CNPJ': 'N/A',
+                    'Tipo': 'N/A'
+                })
+            else:
+                username = user[0]
+                user_data.append({
+                    'Usuário': username,
+                    'Nome': 'N/A',
+                    'CPF/CNPJ': 'N/A',
+                    'Tipo': 'N/A'
+                })
+        
+        users_df = pd.DataFrame(user_data)
+        st.dataframe(users_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("Nenhum usuário cadastrado.")
+    
+    # Adicionar novo usuário
+    st.subheader("Adicionar Novo Usuário")
+    
+    with st.form("add_user_form"):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Gráfico de pizza - Distribuição de despesas
-            if expenses:
-                expense_categories = {}
-                for expense in expenses:
-                    category = expense[4]
-                    expense_categories[category] = expense_categories.get(category, 0) + expense[3]
-                
-                if expense_categories:
-                    fig1 = px.pie(
-                        values=list(expense_categories.values()),
-                        names=list(expense_categories.keys()),
-                        title="Distribuição de Despesas por Categoria"
-                    )
-                    st.plotly_chart(fig1, use_container_width=True)
+            new_username = st.text_input("Nome de usuário*")
+            new_password = st.text_input("Senha*", type="password")
+            confirm_password = st.text_input("Confirmar Senha*", type="password")
         
         with col2:
-            # Gráfico de pizza - Distribuição de receitas
-            if incomes:
-                income_types = {}
-                for income in incomes:
-                    income_type = income[2]
-                    income_types[income_type] = income_types.get(income_type, 0) + income[4]
-                
-                if income_types:
-                    fig2 = px.pie(
-                        values=list(income_types.values()),
-                        names=list(income_types.keys()),
-                        title="Distribuição de Receitas por Tipo"
-                    )
-                    st.plotly_chart(fig2, use_container_width=True)
+            nome_completo = st.text_input("Nome Completo*")
+            tipo_pessoa = st.radio("Tipo de Pessoa*", ["Física", "Jurídica"])
+            
+            if tipo_pessoa == "Física":
+                cpf_cnpj = st.text_input("CPF*", placeholder="000.000.000-00")
+                if cpf_cnpj and not validate_cpf(cpf_cnpj):
+                    st.error("CPF inválido. Por favor, verifique o número.")
+            else:
+                cpf_cnpj = st.text_input("CNPJ*", placeholder="00.000.000/0000-00")
+                if cpf_cnpj and not validate_cnpj(cpf_cnpj):
+                    st.error("CNPJ inválido. Por favor, verifique o número.")
         
-        # Últimas transações
-        st.subheader("🔄 Últimas Transações")
+        submitted = st.form_submit_button("Adicionar Usuário")
         
-        # Combinar e ordenar transações
-        all_transactions = []
+        if submitted:
+            if new_username and new_password and confirm_password and nome_completo and cpf_cnpj:
+                if new_password == confirm_password:
+                    if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj)) or (tipo_pessoa == "Jurídica" and validate_cnpj(cpf_cnpj)):
+                        try:
+                            add_user(
+                                new_username, 
+                                make_hashes(new_password), 
+                                nome_completo, 
+                                re.sub(r'[^0-9]', '', cpf_cnpj), 
+                                tipo_pessoa
+                            )
+                            st.success(f"Usuário {new_username} adicionado com sucesso!")
+                            time.sleep(1)
+                            st.rerun()
+                        except sqlite3.IntegrityError:
+                            st.error("Nome de usuário já existe. Escolha outro.")
+                    else:
+                        st.error("Por favor, insira um CPF ou CNPJ válido.")
+                else:
+                    st.error("As senhas não coincidem.")
+            else:
+                st.error("Por favor, preencha todos os campos obrigatórios.")
+    
+    # Remover usuário
+    st.subheader("Remover Usuário")
+    
+    if users:
+        user_to_delete = st.selectbox("Selecionar usuário para remover", [user[0] for user in users if user[0] != "admin"])
         
-        for expense in expenses[-5:]:  # Últimas 5 despesas
-            all_transactions.append({
-                "Tipo": "Despesa",
-                "Data": expense[1],
-                "Descrição": expense[2],
-                "Valor": -expense[3],
-                "Categoria": expense[4]
-            })
-        
-        for income in incomes[-5:]:  # Últimas 5 receitas
-            all_transactions.append({
-                "Tipo": "Receita",
-                "Data": income[1],
-                "Descrição": income[3],
-                "Valor": income[4],
-                "Categoria": income[2]
-            })
-        
-        # Ordenar por data (mais recente primeiro)
-        all_transactions.sort(key=lambda x: x["Data"], reverse=True)
-        
-        if all_transactions:
-            for transaction in all_transactions[:10]:  # Mostrar até 10 transações
-                color = "red" if transaction["Tipo"] == "Despesa" else "green"
-                icon = "⬇️" if transaction["Tipo"] == "Despesa" else "⬆️"
-                
-                st.markdown(f"""
-                <div style='background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin: 5px 0; border-left: 4px solid {color}'>
-                    <strong>{icon} {transaction['Tipo']}</strong><br>
-                    <small>Data: {format_brazilian_date(transaction['Data'])} | {transaction['Categoria']}</small><br>
-                    {transaction['Descrição']}<br>
-                    <strong style='color: {color}'>R$ {transaction['Valor']:,.2f}</strong>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("Nenhuma transação recente.")
+        if st.button("🗑️ Remover Usuário"):
+            if user_to_delete != "admin":
+                delete_user(user_to_delete)
+                st.success(f"Usuário {user_to_delete} removido com sucesso!")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Não é possível remover o usuário administrador.")
     else:
-        st.info("Adicione algumas transações para ver estatísticas detalhadas.")
+        st.info("Nenhum usuário para remover.")
 
-def clear_cache():
-    """Limpa o cache do Streamlit para evitar problemas de renderização"""
-    try:
-        # Limpa todos os caches
-        st.cache_data.clear()
-        st.cache_resource.clear()
-    except:
-        pass
-
-# Executar aplicação
+# Executar a aplicação
 if __name__ == "__main__":
     main()
