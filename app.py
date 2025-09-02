@@ -19,21 +19,21 @@ import os
 import time
 
 # Se não estamos logados, limpar tudo e mostrar apenas login
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
+#if 'logged_in' not in st.session_state:
+    #st.session_state.logged_in = False
 
-if not st.session_state.logged_in:
+#if not st.session_state.logged_in:
     # Limpar todo o conteúdo existente
-    st.markdown("""
-        <style>
-            .stApp > div {
-                display: none;
-            }
-            .stApp > div:first-child {
-                display: block;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+    ##st.markdown("""
+        #<style>
+            #.stApp > div {
+                #display: none;
+           # }
+           # .stApp > div:first-child {
+           #     display: block;
+          #  }
+       # </style>
+    #""", unsafe_allow_html=True)
 
 # Configuração da página
 st.set_page_config(
