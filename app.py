@@ -915,9 +915,9 @@ def import_from_spreadsheet(file, user_id, is_income=False):
 # Interface principal da aplicação
 def main():
     # Inicializar banco - CORREÇÃO DA ORDEM
-    create_tables()  # Primeiro criar as tabelas
+    #create_tables()  # Primeiro criar as tabelas
     check_and_update_tables()  # Verificar e atualizar estrutura
-    create_user()    # Depois criar/verificar usuário admin
+    #create_user()    # Depois criar/verificar usuário admin
     
     # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
