@@ -169,8 +169,24 @@ def update_user_info(username, nome_completo, cpf_cnpj, tipo_pessoa):
 def get_all_users():
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
-    c.execute('SELECT username, nome_completo, cpf_cnpj, tipo_pessoa FROM userstable')
-    users = c.fetchall()
+    
+    # Verificar se as colunas existem na tabela
+    try:
+        c.execute('PRAGMA table_info(userstable)')
+        columns = [column[1] for column in c.fetchall()]
+        
+        # Construir a query baseada nas colunas existentes
+        if 'cpf_cnpj' in columns and 'tipo_pessoa' in columns:
+            c.execute('SELECT username, nome_completo, cpf_cnpj, tipo_pessoa FROM userstable')
+        elif 'nome_completo' in columns:
+            c.execute('SELECT username, nome_completo FROM userstable')
+        else:
+            c.execute('SELECT username FROM userstable')
+            
+        users = c.fetchall()
+    except sqlite3.OperationalError:
+        users = []
+    
     conn.close()
     return users
 
@@ -288,21 +304,44 @@ def delete_income(id, user_id):
 
 # Função para buscar CPF/CNPJ cadastrados
 def get_all_cpf_cnpj():
-    """Retorna todos os CPF/CNPJ cadastrados no sistema"""
+    """Retorna todos os CPF/CNPJ cadastrados no sistema com nomes"""
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
     
-    # Buscar CPF/CNPJ de usuários
-    c.execute('SELECT cpf_cnpj, nome_completo FROM userstable WHERE cpf_cnpj IS NOT NULL')
-    users_data = c.fetchall()
+    all_data = {}
     
-    # Buscar CPF/CNPJ de despesas
-    c.execute('SELECT cpf_cnpj, origin FROM expenses WHERE cpf_cnpj IS NOT NULL')
-    expenses_data = c.fetchall()
+    try:
+        # Buscar CPF/CNPJ de usuários
+        c.execute('SELECT cpf_cnpj, nome_completo FROM userstable WHERE cpf_cnpj IS NOT NULL AND cpf_cnpj != ""')
+        users_data = c.fetchall()
+        
+        for cpf_cnpj, nome in users_data:
+            if cpf_cnpj:
+                all_data[cpf_cnpj] = nome
+    except:
+        pass
     
-    # Buscar CPF/CNPJ de receitas
-    c.execute('SELECT cpf_cnpj, description FROM incomes WHERE cpf_cnpj IS NOT NULL')
-    incomes_data = c.fetchall()
+    try:
+        # Buscar CPF/CNPJ de despesas
+        c.execute('SELECT cpf_cnpj, origin FROM expenses WHERE cpf_cnpj IS NOT NULL AND cpf_cnpj != ""')
+        expenses_data = c.fetchall()
+        
+        for cpf_cnpj, origem in expenses_data:
+            if cpf_cnpj:
+                all_data[cpf_cnpj] = origem
+    except:
+        pass
+    
+    try:
+        # Buscar CPF/CNPJ de receitas
+        c.execute('SELECT cpf_cnpj, description FROM incomes WHERE cpf_cnpj IS NOT NULL AND cpf_cnpj != ""')
+        incomes_data = c.fetchall()
+        
+        for cpf_cnpj, descricao in incomes_data:
+            if cpf_cnpj:
+                all_data[cpf_cnpj] = descricao
+    except:
+        pass
     
     conn.close()
     
@@ -1057,25 +1096,45 @@ def admin_page():
         if users:
             user_data = []
             for user in users:
-                user_data.append({
-                    "Usuário": user[0],
-                    "Nome": user[1],
-                    "CPF/CNPJ": format_cpf(user[2]) if user[3] == "Física" else format_cnpj(user[2]) if user[2] else "N/A",
-                    "Tipo": user[3]
-                })
+                # Verificar quantas colunas retornaram
+                if len(user) >= 4:  # Tem todas as colunas
+                    user_data.append({
+                        "Usuário": user[0],
+                        "Nome": user[1],
+                        "CPF/CNPJ": format_cpf(user[2]) if len(user) > 2 and user[3] == "Física" else format_cnpj(user[2]) if len(user) > 2 and user[2] else "N/A",
+                        "Tipo": user[3] if len(user) > 3 else "N/A"
+                    })
+                elif len(user) >= 2:  # Tem pelo menos username e nome
+                    user_data.append({
+                        "Usuário": user[0],
+                        "Nome": user[1],
+                        "CPF/CNPJ": "N/A",
+                        "Tipo": "N/A"
+                    })
+                else:  # Só tem username
+                    user_data.append({
+                        "Usuário": user[0],
+                        "Nome": "N/A",
+                        "CPF/CNPJ": "N/A",
+                        "Tipo": "N/A"
+                    })
             
             user_df = pd.DataFrame(user_data)
             st.dataframe(user_df, use_container_width=True)
             
-            # Opção para remover usuário
-            user_to_delete = st.selectbox("Selecionar usuário para remover", 
-                                        [user[0] for user in users if user[0] != "admin"])
+            # Opção para remover usuário (apenas usuários não admin)
+            usuarios_nao_admin = [user[0] for user in users if user[0] != "admin"]
             
-            if st.button("Remover Usuário", type="secondary"):
-                if user_to_delete:
-                    delete_user(user_to_delete)
-                    st.success(f"Usuário '{user_to_delete}' removido com sucesso!")
-                    rerun()
+            if usuarios_nao_admin:
+                user_to_delete = st.selectbox("Selecionar usuário para remover", usuarios_nao_admin)
+                
+                if st.button("Remover Usuário", type="secondary"):
+                    if user_to_delete:
+                        delete_user(user_to_delete)
+                        st.success(f"Usuário '{user_to_delete}' removido com sucesso!")
+                        rerun()
+            else:
+                st.info("Nenhum usuário não-admin para remover.")
         else:
             st.info("Nenhum usuário cadastrado.")
     
@@ -1088,14 +1147,14 @@ def admin_page():
         
         # Total de usuários
         c.execute('SELECT COUNT(*) FROM userstable')
-        total_users = c.fetchone()[0]
+        total_users = c.fetchone()[0] or 0
         
         # Total de transações
         c.execute('SELECT COUNT(*) FROM expenses')
-        total_expenses = c.fetchone()[0]
+        total_expenses = c.fetchone()[0] or 0
         
         c.execute('SELECT COUNT(*) FROM incomes')
-        total_incomes = c.fetchone()[0]
+        total_incomes = c.fetchone()[0] or 0
         
         # Valores totais
         c.execute('SELECT SUM(value) FROM expenses')
@@ -1597,6 +1656,55 @@ def incomes_page():
     else:
         st.info("Nenhuma receita cadastrada.")
 
+
+# Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
+st.subheader("Informações do Contribuinte (Opcional)")
+contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
+
+if contrib_tipo != "Não informar":
+    col3, col4 = st.columns(2)
+    with col3:
+        # Buscar CPF/CNPJ cadastrados para autocompletar
+        cpf_cnpj_cadastrados = get_all_cpf_cnpj()
+        opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
+        
+        if contrib_tipo == "Física":
+            cpf_selecionado = st.selectbox("CPF do Contribuinte", 
+                                         [""] + opcoes_cpf_cnpj,
+                                         format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+            
+            if cpf_selecionado:
+                contrib_cpf = st.text_input("CPF (editar se necessário)", 
+                                          value=cpf_selecionado,
+                                          placeholder="000.000.000-00")
+                # Auto-preencher o nome se CPF foi selecionado
+                contrib_name = st.text_input("Nome do Contribuinte", 
+                                           value=cpf_cnpj_cadastrados.get(cpf_selecionado, ""),
+                                           placeholder="Nome completo")
+            else:
+                contrib_cpf = st.text_input("CPF do Contribuinte", 
+                                          placeholder="000.000.000-00")
+                contrib_name = st.text_input("Nome do Contribuinte", placeholder="Nome completo")
+            contrib_identifier = contrib_cpf
+        else:
+            cnpj_selecionado = st.selectbox("CNPJ do Contribuinte", 
+                                          [""] + opcoes_cpf_cnpj,
+                                          format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+            
+            if cnpj_selecionado:
+                contrib_cnpj = st.text_input("CNPJ (editar se necessário)", 
+                                           value=cnpj_selecionado,
+                                           placeholder="00.000.000/0000-00")
+                # Auto-preencher o nome se CNPJ foi selecionado
+                contrib_name = st.text_input("Nome/Razão Social", 
+                                           value=cpf_cnpj_cadastrados.get(cnpj_selecionado, ""),
+                                           placeholder="Razão social")
+            else:
+                contrib_cnpj = st.text_input("CNPJ do Contribuinte", 
+                                           placeholder="00.000.000/0000-00")
+                contrib_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
+            contrib_identifier = contrib_cnpj        
+
 # Página de despesas - CORRIGIDA com autocompletar
 def expenses_page():
     st.header("💸 Gestão de Despesas")
@@ -1616,44 +1724,54 @@ def expenses_page():
             expense_category = st.selectbox("Categoria*", 
                                           ["Alimentação", "Transporte", "Utilidades", "Manutenção", 
                                            "Eventos", "Equipamentos", "Outros"])
-        
+   
         # Informações do fornecedor (opcional) - COM AUTOCOMPLETAR
-        st.subheader("Informações do Fornecedor (Opcional)")
-        supplier_tipo = st.radio("Tipo de Fornecedor", ["Física", "Jurídica", "Não informar"], index=2)
+st.subheader("Informações do Fornecedor (Opcional)")
+supplier_tipo = st.radio("Tipo de Fornecedor", ["Física", "Jurídica", "Não informar"], index=2)
+
+if supplier_tipo != "Não informar":
+    col3, col4 = st.columns(2)
+    with col3:
+        # Buscar CPF/CNPJ cadastrados para autocompletar
+        cpf_cnpj_cadastrados = get_all_cpf_cnpj()
+        opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
         
-        if supplier_tipo != "Não informar":
-            col3, col4 = st.columns(2)
-            with col3:
-                # Buscar CPF/CNPJ cadastrados para autocompletar
-                cpf_cnpj_cadastrados = get_all_cpf_cnpj()
-                opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
-                
-                if supplier_tipo == "Física":
-                    cpf_selecionado = st.selectbox("CPF do Fornecedor", 
-                                                 [""] + opcoes_cpf_cnpj,
-                                                 format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-                    
-                    if cpf_selecionado:
-                        supplier_cpf = st.text_input("CPF (editar se necessário)", 
-                                                   value=cpf_selecionado,
-                                                   placeholder="000.000.000-00")
-                    else:
-                        supplier_cpf = st.text_input("CPF do Fornecedor", 
-                                                   placeholder="000.000.000-00")
-                    supplier_identifier = supplier_cpf
-                else:
-                    cnpj_selecionado = st.selectbox("CNPJ do Fornecedor", 
-                                                  [""] + opcoes_cpf_cnpj,
-                                                  format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
-                    
-                    if cnpj_selecionado:
-                        supplier_cnpj = st.text_input("CNPJ (editar se necessário)", 
-                                                    value=cnpj_selecionado,
-                                                    placeholder="00.000.000/0000-00")
-                    else:
-                        supplier_cnpj = st.text_input("CNPJ do Fornecedor", 
-                                                    placeholder="00.000.000/0000-00")
-                    supplier_identifier = supplier_cnpj
+        if supplier_tipo == "Física":
+            cpf_selecionado = st.selectbox("CPF do Fornecedor", 
+                                         [""] + opcoes_cpf_cnpj,
+                                         format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+            
+            if cpf_selecionado:
+                supplier_cpf = st.text_input("CPF (editar se necessário)", 
+                                           value=cpf_selecionado,
+                                           placeholder="000.000.000-00")
+                # Auto-preencher o nome se CPF foi selecionado
+                supplier_name = st.text_input("Nome do Fornecedor", 
+                                            value=cpf_cnpj_cadastrados.get(cpf_selecionado, ""),
+                                            placeholder="Nome completo")
+            else:
+                supplier_cpf = st.text_input("CPF do Fornecedor", 
+                                           placeholder="000.000.000-00")
+                supplier_name = st.text_input("Nome do Fornecedor", placeholder="Nome completo")
+            supplier_identifier = supplier_cpf
+        else:
+            cnpj_selecionado = st.selectbox("CNPJ do Fornecedor", 
+                                          [""] + opcoes_cpf_cnpj,
+                                          format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+            
+            if cnpj_selecionado:
+                supplier_cnpj = st.text_input("CNPJ (editar se necessário)", 
+                                            value=cnpj_selecionado,
+                                            placeholder="00.000.000/0000-00")
+                # Auto-preencher o nome se CNPJ foi selecionado
+                supplier_name = st.text_input("Nome/Razão Social", 
+                                            value=cpf_cnpj_cadastrados.get(cnpj_selecionado, ""),
+                                            placeholder="Razão social")
+            else:
+                supplier_cnpj = st.text_input("CNPJ do Fornecedor", 
+                                            placeholder="00.000.000/0000-00")
+                supplier_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
+            supplier_identifier = supplier_cnpj
             
             with col4:
                 supplier_name = st.text_input("Nome do Fornecedor", placeholder="Nome completo ou razão social")
@@ -1734,6 +1852,8 @@ def expenses_page():
                 rerun()
     else:
         st.info("Nenhuma despesa cadastrada.")
+        
+        
 
 # Página de dashboard
 def dashboard_page():
