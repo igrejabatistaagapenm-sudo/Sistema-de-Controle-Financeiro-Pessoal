@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Função para rerun (compatibilidade com versões do Streamlit)
+# Função para rerun (compatibilidade với versões do Streamlit)
 def rerun():
     # Apenas recarrega a página via JavaScript
     st.markdown("""
@@ -286,6 +286,42 @@ def delete_income(id, user_id):
     conn.commit()
     conn.close()
 
+# Função para buscar CPF/CNPJ cadastrados
+def get_all_cpf_cnpj():
+    """Retorna todos os CPF/CNPJ cadastrados no sistema"""
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    
+    # Buscar CPF/CNPJ de usuários
+    c.execute('SELECT cpf_cnpj, nome_completo FROM userstable WHERE cpf_cnpj IS NOT NULL')
+    users_data = c.fetchall()
+    
+    # Buscar CPF/CNPJ de despesas
+    c.execute('SELECT cpf_cnpj, origin FROM expenses WHERE cpf_cnpj IS NOT NULL')
+    expenses_data = c.fetchall()
+    
+    # Buscar CPF/CNPJ de receitas
+    c.execute('SELECT cpf_cnpj, description FROM incomes WHERE cpf_cnpj IS NOT NULL')
+    incomes_data = c.fetchall()
+    
+    conn.close()
+    
+    # Combinar todos os dados
+    all_data = {}
+    for cpf_cnpj, nome in users_data:
+        if cpf_cnpj:
+            all_data[cpf_cnpj] = nome
+    
+    for cpf_cnpj, origem in expenses_data:
+        if cpf_cnpj:
+            all_data[cpf_cnpj] = origem
+    
+    for cpf_cnpj, descricao in incomes_data:
+        if cpf_cnpj:
+            all_data[cpf_cnpj] = descricao
+    
+    return all_data
+
 # Funções para manipulação da logo
 def get_base64_image(image_path):
     """Converte imagem para base64 (para HTML)"""
@@ -321,7 +357,7 @@ def add_logo_to_excel(df, logo_path, output):
                 try:
                     worksheet.insert_image('A1', logo_path, {'x_offset': 15, 'y_offset': 10, 'x_scale': 0.5, 'y_scale': 0.5})
                 except:
-                    st.warning("Não foi possível adicionar la logo ao Excel.")
+                    st.warning("Não foi possível adicionar a logo ao Excel.")
             
             # Ajustar largura das colunas
             worksheet.set_column('A:A', 15)
@@ -334,11 +370,46 @@ def add_logo_to_excel(df, logo_path, output):
         st.error(f"Erro ao gerar Excel: {str(e)}")
         return False
 
-# Função para exportar dados para Excel
+# Função para exportar dados para Excel - CORRIGIDA
 def export_to_excel(expenses, incomes):
-    # Criar DataFrames
-    expense_df = pd.DataFrame(expenses, columns=['ID', 'Data', 'Origem', 'Valor', 'Categoria', 'UserID', 'CPF_CNPJ', 'Tipo_Pessoa']) if expenses else pd.DataFrame()
-    income_df = pd.DataFrame(incomes, columns=['ID', 'Data', 'Tipo', 'Descrição', 'Valor', 'UserID', 'CPF_CNPJ', 'Tipo_Pessoa']) if incomes else pd.DataFrame()
+    # Criar DataFrames com verificação de colunas
+    expense_data = []
+    for expense in expenses:
+        # Verificar se os índices existem antes de acessá-los
+        cpf_cnpj = expense[6] if len(expense) > 6 else None
+        tipo_pessoa = expense[7] if len(expense) > 7 else None
+        
+        expense_data.append({
+            'ID': expense[0],
+            'Data': expense[1],
+            'Origem': expense[2],
+            'Valor': expense[3],
+            'Categoria': expense[4],
+            'UserID': expense[5],
+            'CPF_CNPJ': cpf_cnpj,
+            'Tipo_Pessoa': tipo_pessoa
+        })
+    
+    expense_df = pd.DataFrame(expense_data) if expense_data else pd.DataFrame()
+    
+    income_data = []
+    for income in incomes:
+        # Verificar se os índices existem antes de acessá-los
+        cpf_cnpj = income[6] if len(income) > 6 else None
+        tipo_pessoa = income[7] if len(income) > 7 else None
+        
+        income_data.append({
+            'ID': income[0],
+            'Data': income[1],
+            'Tipo': income[2],
+            'Descrição': income[3],
+            'Valor': income[4],
+            'UserID': income[5],
+            'CPF_CNPJ': cpf_cnpj,
+            'Tipo_Pessoa': tipo_pessoa
+        })
+    
+    income_df = pd.DataFrame(income_data) if income_data else pd.DataFrame()
     
     # Formatar datas para o formato brasileiro
     if not expense_df.empty:
@@ -395,25 +466,33 @@ def export_to_excel(expenses, incomes):
             # Combinar dados em um único DataFrame para CSV
             combined_data = []
             for expense in expenses:
+                # Verificar se os índices existem antes de acessá-los
+                cpf_cnpj = expense[6] if len(expense) > 6 else None
+                tipo_pessoa = expense[7] if len(expense) > 7 else None
+                
                 combined_data.append({
                     'Tipo': 'Despesa',
                     'Data': expense[1],
                     'Descrição': expense[2],
                     'Valor': -expense[3],
                     'Categoria': expense[4],
-                    'CPF/CNPJ': expense[6] if len(expense) > 6 else '',
-                    'Tipo Pessoa': expense[7] if len(expense) > 7 else ''
+                    'CPF/CNPJ': cpf_cnpj,
+                    'Tipo Pessoa': tipo_pessoa
                 })
             
             for income in incomes:
+                # Verificar se os índices existem antes de acessá-los
+                cpf_cnpj = income[6] if len(income) > 6 else None
+                tipo_pessoa = income[7] if len(income) > 7 else None
+                
                 combined_data.append({
                     'Tipo': 'Receita',
                     'Data': income[1],
                     'Descrição': income[3],
                     'Valor': income[4],
                     'Categoria': income[2],
-                    'CPF/CNPJ': income[6] if len(income) > 6 else '',
-                    'Tipo Pessoa': income[7] if len(income) > 7 else ''
+                    'CPF/CNPJ': cpf_cnpj,
+                    'Tipo Pessoa': tipo_pessoa
                 })
             
             if combined_data:
@@ -438,11 +517,46 @@ def format_brazilian_date(date_str):
     except:
         return date_str
 
-# Função para exportar relatório em HTML com logo
+# Função para exportar relatório em HTML com logo - CORRIGIDA
 def export_to_html_with_logo(expenses, incomes, filters=None):
-    # Criar DataFrames
-    expense_df = pd.DataFrame(expenses, columns=['ID', 'Data', 'Origem', 'Valor', 'Categoria', 'UserID', 'CPF_CNPJ', 'Tipo_Pessoa']) if expenses else pd.DataFrame()
-    income_df = pd.DataFrame(incomes, columns=['ID', 'Data', 'Tipo', 'Descrição', 'Valor', 'UserID', 'CPF_CNPJ', 'Tipo_Pessoa']) if incomes else pd.DataFrame()
+    # Criar DataFrames com verificação de colunas
+    expense_data = []
+    for expense in expenses:
+        # Verificar se os índices existem antes de acessá-los
+        cpf_cnpj = expense[6] if len(expense) > 6 else None
+        tipo_pessoa = expense[7] if len(expense) > 7 else None
+        
+        expense_data.append({
+            'ID': expense[0],
+            'Data': expense[1],
+            'Origem': expense[2],
+            'Valor': expense[3],
+            'Categoria': expense[4],
+            'UserID': expense[5],
+            'CPF_CNPJ': cpf_cnpj,
+            'Tipo_Pessoa': tipo_pessoa
+        })
+    
+    expense_df = pd.DataFrame(expense_data) if expense_data else pd.DataFrame()
+    
+    income_data = []
+    for income in incomes:
+        # Verificar se os índices existem antes de acessá-los
+        cpf_cnpj = income[6] if len(income) > 6 else None
+        tipo_pessoa = income[7] if len(income) > 7 else None
+        
+        income_data.append({
+            'ID': income[0],
+            'Data': income[1],
+            'Tipo': income[2],
+            'Descrição': income[3],
+            'Valor': income[4],
+            'UserID': income[5],
+            'CPF_CNPJ': cpf_cnpj,
+            'Tipo_Pessoa': tipo_pessoa
+        })
+    
+    income_df = pd.DataFrame(income_data) if income_data else pd.DataFrame()
     
     # Formatar datas para o formato brasileiro
     if not expense_df.empty:
@@ -548,12 +662,13 @@ def export_to_html_with_logo(expenses, incomes, filters=None):
             </tr>
         """
         for _, row in expense_df.iterrows():
+            cpf_cnpj_formatado = format_cpf(row['CPF_CNPJ']) if row['Tipo_Pessoa'] == "Física" else format_cnpj(row['CPF_CNPJ']) if row['CPF_CNPJ'] else "N/A"
             html_content += f"""
             <tr>
                 <td>{row['Data']}</td>
                 <td>{row['Origem']}</td>
                 <td>{row['Categoria']}</td>
-                <td>{row['CPF_CNPJ'] if pd.notna(row['CPF_CNPJ']) else 'N/A'}</td>
+                <td>{cpf_cnpj_formatado}</td>
                 <td>{row['Tipo_Pessoa'] if pd.notna(row['Tipo_Pessoa']) else 'N/A'}</td>
                 <td>{row['Valor']:,.2f}</td>
             </tr>
@@ -575,12 +690,13 @@ def export_to_html_with_logo(expenses, incomes, filters=None):
             </tr>
         """
         for _, row in income_df.iterrows():
+            cpf_cnpj_formatado = format_cpf(row['CPF_CNPJ']) if row['Tipo_Pessoa'] == "Física" else format_cnpj(row['CPF_CNPJ']) if row['CPF_CNPJ'] else "N/A"
             html_content += f"""
             <tr>
                 <td>{row['Data']}</td>
                 <td>{row['Tipo']}</td>
                 <td>{row['Descrição']}</td>
-                <td>{row['CPF_CNPJ'] if pd.notna(row['CPF_CNPJ']) else 'N/A'}</td>
+                <td>{cpf_cnpj_formatado}</td>
                 <td>{row['Tipo_Pessoa'] if pd.notna(row['Tipo_Pessoa']) else 'N/A'}</td>
                 <td>{row['Valor']:,.2f}</td>
             </tr>
@@ -858,7 +974,6 @@ def import_data_page():
         uploaded_file = st.file_uploader("Selecione a planilha de despesas", 
                                        type=['xlsx', 'xls', 'csv'],
                                        key="expense_import")
-        
         if uploaded_file is not None:
             if st.button("Importar Despesas", key="import_expenses_btn"):
                 success, message = import_from_spreadsheet(uploaded_file, st.session_state.username, is_income=False)
@@ -1345,7 +1460,7 @@ def reports_page():
     else:
         st.warning("Nenhum dado encontrado para o período selecionado.")
 
-# Página de receitas - CORRIGIDA
+# Página de receitas - CORRIGIDA com autocompletar
 def incomes_page():
     st.header("💵 Gestão de Receitas")
     
@@ -1364,18 +1479,42 @@ def incomes_page():
             income_value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
             income_description = st.text_input("Descrição*", placeholder="Ex: Oferta do culto de domingo")
         
-        # Informações do contribuinte (opcional)
+        # Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
         st.subheader("Informações do Contribuinte (Opcional)")
         contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
         
         if contrib_tipo != "Não informar":
             col3, col4 = st.columns(2)
             with col3:
+                # Buscar CPF/CNPJ cadastrados para autocompletar
+                cpf_cnpj_cadastrados = get_all_cpf_cnpj()
+                opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
+                
                 if contrib_tipo == "Física":
-                    contrib_cpf = st.text_input("CPF do Contribuinte", placeholder="000.000.000-00")
+                    cpf_selecionado = st.selectbox("CPF do Contribuinte", 
+                                                 [""] + opcoes_cpf_cnpj,
+                                                 format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+                    
+                    if cpf_selecionado:
+                        contrib_cpf = st.text_input("CPF (editar se necessário)", 
+                                                  value=cpf_selecionado,
+                                                  placeholder="000.000.000-00")
+                    else:
+                        contrib_cpf = st.text_input("CPF do Contribuinte", 
+                                                  placeholder="000.000.000-00")
                     contrib_identifier = contrib_cpf
                 else:
-                    contrib_cnpj = st.text_input("CNPJ do Contribuinte", placeholder="00.000.000/0000-00")
+                    cnpj_selecionado = st.selectbox("CNPJ do Contribuinte", 
+                                                  [""] + opcoes_cpf_cnpj,
+                                                  format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+                    
+                    if cnpj_selecionado:
+                        contrib_cnpj = st.text_input("CNPJ (editar se necessário)", 
+                                                   value=cnpj_selecionado,
+                                                   placeholder="00.000.000/0000-00")
+                    else:
+                        contrib_cnpj = st.text_input("CNPJ do Contribuinte", 
+                                                   placeholder="00.000.000/0000-00")
                     contrib_identifier = contrib_cnpj
             
             with col4:
@@ -1458,7 +1597,7 @@ def incomes_page():
     else:
         st.info("Nenhuma receita cadastrada.")
 
-# Página de despesas - CORRIGIDA
+# Página de despesas - CORRIGIDA com autocompletar
 def expenses_page():
     st.header("💸 Gestão de Despesas")
     
@@ -1478,18 +1617,42 @@ def expenses_page():
                                           ["Alimentação", "Transporte", "Utilidades", "Manutenção", 
                                            "Eventos", "Equipamentos", "Outros"])
         
-        # Informações do fornecedor (opcional)
+        # Informações do fornecedor (opcional) - COM AUTOCOMPLETAR
         st.subheader("Informações do Fornecedor (Opcional)")
         supplier_tipo = st.radio("Tipo de Fornecedor", ["Física", "Jurídica", "Não informar"], index=2)
         
         if supplier_tipo != "Não informar":
             col3, col4 = st.columns(2)
             with col3:
+                # Buscar CPF/CNPJ cadastrados para autocompletar
+                cpf_cnpj_cadastrados = get_all_cpf_cnpj()
+                opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
+                
                 if supplier_tipo == "Física":
-                    supplier_cpf = st.text_input("CPF do Fornecedor", placeholder="000.000.000-00")
+                    cpf_selecionado = st.selectbox("CPF do Fornecedor", 
+                                                 [""] + opcoes_cpf_cnpj,
+                                                 format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+                    
+                    if cpf_selecionado:
+                        supplier_cpf = st.text_input("CPF (editar se necessário)", 
+                                                   value=cpf_selecionado,
+                                                   placeholder="000.000.000-00")
+                    else:
+                        supplier_cpf = st.text_input("CPF do Fornecedor", 
+                                                   placeholder="000.000.000-00")
                     supplier_identifier = supplier_cpf
                 else:
-                    supplier_cnpj = st.text_input("CNPJ do Fornecedor", placeholder="00.000.000/0000-00")
+                    cnpj_selecionado = st.selectbox("CNPJ do Fornecedor", 
+                                                  [""] + opcoes_cpf_cnpj,
+                                                  format_func=lambda x: f"{format_cnpj(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
+                    
+                    if cnpj_selecionado:
+                        supplier_cnpj = st.text_input("CNPJ (editar se necessário)", 
+                                                    value=cnpj_selecionado,
+                                                    placeholder="00.000.000/0000-00")
+                    else:
+                        supplier_cnpj = st.text_input("CNPJ do Fornecedor", 
+                                                    placeholder="00.000.000/0000-00")
                     supplier_identifier = supplier_cnpj
             
             with col4:
