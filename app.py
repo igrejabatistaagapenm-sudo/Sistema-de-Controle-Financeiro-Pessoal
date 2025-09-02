@@ -321,7 +321,7 @@ def add_logo_to_excel(df, logo_path, output):
                 try:
                     worksheet.insert_image('A1', logo_path, {'x_offset': 15, 'y_offset': 10, 'x_scale': 0.5, 'y_scale': 0.5})
                 except:
-                    st.warning("Não foi possível adicionar a logo ao Excel.")
+                    st.warning("Não foi possível adicionar la logo ao Excel.")
             
             # Ajustar largura das colunas
             worksheet.set_column('A:A', 15)
@@ -401,8 +401,8 @@ def export_to_excel(expenses, incomes):
                     'Descrição': expense[2],
                     'Valor': -expense[3],
                     'Categoria': expense[4],
-                    'CPF/CNPJ': expense[6],
-                    'Tipo Pessoa': expense[7]
+                    'CPF/CNPJ': expense[6] if len(expense) > 6 else '',
+                    'Tipo Pessoa': expense[7] if len(expense) > 7 else ''
                 })
             
             for income in incomes:
@@ -412,8 +412,8 @@ def export_to_excel(expenses, incomes):
                     'Descrição': income[3],
                     'Valor': income[4],
                     'Categoria': income[2],
-                    'CPF/CNPJ': income[6],
-                    'Tipo Pessoa': income[7]
+                    'CPF/CNPJ': income[6] if len(income) > 6 else '',
+                    'Tipo Pessoa': income[7] if len(income) > 7 else ''
                 })
             
             if combined_data:
@@ -762,7 +762,7 @@ def main():
             st.session_state.user_info = None
             rerun()
 
-# Página de login
+# Página de login - CORRIGIDA
 def login_page():
     st.header("Login")
     
@@ -773,9 +773,10 @@ def login_page():
         hashed_pswd = make_hashes(password)
         
         # Verificar credenciais
-        conn = sqlite3.connect('finance.db')
-        c = conn.cursor()
+        conn = None
         try:
+            conn = sqlite3.connect('finance.db')
+            c = conn.cursor()
             c.execute('SELECT * FROM userstable WHERE username =? AND password = ?', (username, hashed_pswd))
             result = c.fetchall()
             
@@ -792,10 +793,13 @@ def login_page():
             else:
                 st.error("Usuário ou senha incorretos")
                 
-        except sqlite3.OperationalError:
-            st.error("Erro no banco de dados. Tente novamente.")
+        except sqlite3.OperationalError as e:
+            st.error(f"Erro no banco de dados: {str(e)}")
+        except Exception as e:
+            st.error(f"Erro inesperado: {str(e)}")
         finally:
-            conn.close()  # ← GARANTIR QUE A CONEXÃO SEMPRE FECHE
+            if conn:
+                conn.close()
 
 # Página de completar cadastro
 def complete_registration_page():
@@ -1157,13 +1161,17 @@ def reports_page():
                 st.subheader("Despesas Detalhadas")
                 expense_data = []
                 for expense in filtered_expenses:
+                    # Verificar se os índices existem antes de acessá-los
+                    cpf_cnpj = expense[6] if len(expense) > 6 else None
+                    tipo_pessoa = expense[7] if len(expense) > 7 else None
+                    
                     expense_data.append({
                         "Data": format_brazilian_date(expense[1]),
                         "Origem": expense[2],
                         "Valor": expense[3],
                         "Categoria": expense[4],
-                        "CPF/CNPJ": format_cpf(expense[6]) if expense[7] == "Física" else format_cnpj(expense[6]) if expense[6] else "N/A",
-                        "Tipo Pessoa": expense[7] or "N/A"
+                        "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
+                        "Tipo Pessoa": tipo_pessoa or "N/A"
                     })
                 
                 expense_df = pd.DataFrame(expense_data)
@@ -1173,13 +1181,17 @@ def reports_page():
                 st.subheader("Receitas Detalhadas")
                 income_data = []
                 for income in filtered_incomes:
+                    # Verificar se os índices existem antes de acessá-los
+                    cpf_cnpj = income[6] if len(income) > 6 else None
+                    tipo_pessoa = income[7] if len(income) > 7 else None
+                    
                     income_data.append({
                         "Data": format_brazilian_date(income[1]),
                         "Tipo": income[2],
                         "Descrição": income[3],
                         "Valor": income[4],
-                        "CPF/CNPJ": format_cpf(income[6]) if income[7] == "Física" else format_cnpj(income[6]) if income[6] else "N/A",
-                        "Tipo Pessoa": income[7] or "N/A"
+                        "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
+                        "Tipo Pessoa": tipo_pessoa or "N/A"
                     })
                 
                 income_df = pd.DataFrame(income_data)
@@ -1292,25 +1304,33 @@ def reports_page():
                     # Combinar dados
                     all_data = []
                     for expense in filtered_expenses:
+                        # Verificar se os índices existem antes de acessá-los
+                        cpf_cnpj = expense[6] if len(expense) > 6 else None
+                        tipo_pessoa = expense[7] if len(expense) > 7 else None
+                        
                         all_data.append({
                             'Tipo': 'Despesa',
                             'Data': format_brazilian_date(expense[1]),
                             'Descrição': expense[2],
                             'Valor': -expense[3],
                             'Categoria': expense[4],
-                            'CPF/CNPJ': format_cpf(expense[6]) if expense[7] == "Física" else format_cnpj(expense[6]) if expense[6] else "N/A",
-                            'Tipo Pessoa': expense[7] or "N/A"
+                            'CPF/CNPJ': format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
+                            'Tipo Pessoa': tipo_pessoa or "N/A"
                         })
                     
                     for income in filtered_incomes:
+                        # Verificar se os índices existem antes de acessá-los
+                        cpf_cnpj = income[6] if len(income) > 6 else None
+                        tipo_pessoa = income[7] if len(income) > 7 else None
+                        
                         all_data.append({
                             'Tipo': 'Receita',
                             'Data': format_brazilian_date(income[1]),
                             'Descrição': income[3],
                             'Valor': income[4],
                             'Categoria': income[2],
-                            'CPF/CNPJ': format_cpf(income[6]) if income[7] == "Física" else format_cnpj(income[6]) if income[6] else "N/A",
-                            'Tipo Pessoa': income[7] or "N/A"
+                            'CPF/CNPJ': format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
+                            'Tipo Pessoa': tipo_pessoa or "N/A"
                         })
                     
                     if all_data:
@@ -1325,7 +1345,7 @@ def reports_page():
     else:
         st.warning("Nenhum dado encontrado para o período selecionado.")
 
-# Página de receitas
+# Página de receitas - CORRIGIDA
 def incomes_page():
     st.header("💵 Gestão de Receitas")
     
@@ -1397,21 +1417,25 @@ def incomes_page():
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
     
-    # Lista de receitas
+    # Lista de receitas - CORRIGIDA
     st.subheader("📋 Receitas Cadastradas")
     incomes = get_incomes(st.session_state.username)
     
     if incomes:
         income_data = []
         for income in incomes:
+            # Verificar se os índices existem antes de acessá-los
+            cpf_cnpj = income[6] if len(income) > 6 else None
+            tipo_pessoa = income[7] if len(income) > 7 else None
+            
             income_data.append({
                 "ID": income[0],
                 "Data": format_brazilian_date(income[1]),
                 "Tipo": income[2],
                 "Descrição": income[3],
                 "Valor": income[4],
-                "CPF/CNPJ": format_cpf(income[6]) if income[7] == "Física" else format_cnpj(income[6]) if income[6] else "N/A",
-                "Tipo Pessoa": income[7] or "N/A"
+                "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
+                "Tipo Pessoa": tipo_pessoa or "N/A"
             })
         
         income_df = pd.DataFrame(income_data)
@@ -1434,7 +1458,7 @@ def incomes_page():
     else:
         st.info("Nenhuma receita cadastrada.")
 
-# Página de despesas
+# Página de despesas - CORRIGIDA
 def expenses_page():
     st.header("💸 Gestão de Despesas")
     
@@ -1507,21 +1531,25 @@ def expenses_page():
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
     
-    # Lista de despesas
+    # Lista de despesas - CORRIGIDA
     st.subheader("📋 Despesas Cadastradas")
     expenses = get_expenses(st.session_state.username)
     
     if expenses:
         expense_data = []
         for expense in expenses:
+            # Verificar se os índices existem antes de acessá-los
+            cpf_cnpj = expense[6] if len(expense) > 6 else None
+            tipo_pessoa = expense[7] if len(expense) > 7 else None
+            
             expense_data.append({
                 "ID": expense[0],
                 "Data": format_brazilian_date(expense[1]),
                 "Origem": expense[2],
                 "Valor": expense[3],
                 "Categoria": expense[4],
-                "CPF/CNPJ": format_cpf(expense[6]) if expense[7] == "Física" else format_cnpj(expense[6]) if expense[6] else "N/A",
-                "Tipo Pessoa": expense[7] or "N/A"
+                "CPF/CNPJ": format_cpf(cpf_cnpj) if tipo_pessoa == "Física" else format_cnpj(cpf_cnpj) if cpf_cnpj else "N/A",
+                "Tipo Pessoa": tipo_pessoa or "N/A"
             })
         
         expense_df = pd.DataFrame(expense_data)
