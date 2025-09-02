@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime, date
+from datetime import datetime, date as dt_date
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -1069,9 +1069,9 @@ def show_dashboard():
     col1, col2 = st.columns(2)
     
     with col1:
-        start_date = st.date_input("Data inicial", value=date.today().replace(day=1))
+        start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))  # Corrigido para dt_date
     with col2:
-        end_date = st.date_input("Data final", value=date.today())
+        end_date = st.date_input("Data final", value=dt_date.today())  # Corrigido para dt_date
     
     # Aplicar filtros
     if not expense_df.empty:
@@ -1149,7 +1149,7 @@ def show_expense_form():
         col1, col2 = st.columns(2)
         
         with col1:
-            date = st.date_input("Data*", value=date.today())
+            expense_date = st.date_input("Data*", value=dt_date.today())  # Corrigido para dt_date
             origin = st.text_input("Origem/Fornecedor*")
             value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
         
@@ -1181,7 +1181,7 @@ def show_expense_form():
                     # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
                     if tipo_pessoa == "Não informar":
                         add_expense(
-                            date.strftime("%Y-%m-%d"),
+                            expense_date.strftime("%Y-%m-%d"),  # Corrigido para expense_date
                             origin,
                             value,
                             category,
@@ -1189,7 +1189,7 @@ def show_expense_form():
                         )
                     else:
                         add_expense(
-                            date.strftime("%Y-%m-%d"),
+                            expense_date.strftime("%Y-%m-%d"),  # Corrigido para expense_date
                             origin,
                             value,
                             category,
@@ -1206,7 +1206,7 @@ def show_expense_form():
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
 
-# Formulário de receita
+# Formulário de receita - CORRIGIDO
 def show_income_form():
     st.title("💰 Registrar Receita")
     
@@ -1214,7 +1214,7 @@ def show_income_form():
         col1, col2 = st.columns(2)
         
         with col1:
-            date = st.date_input("Data*", value=date.today())
+            income_date = st.date_input("Data*", value=dt_date.today())  # Corrigido para dt_date
             type_income = st.selectbox("Tipo de Receita*", 
                                      ["Dízimo", "Oferta", "Doação", "Evento", "Outros"])
             value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
@@ -1245,7 +1245,7 @@ def show_income_form():
                     # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
                     if tipo_pessoa == "Não informar":
                         add_income(
-                            date.strftime("%Y-%m-%d"),
+                            income_date.strftime("%Y-%m-%d"),  # Corrigido para income_date
                             type_income,
                             description,
                             value,
@@ -1253,7 +1253,7 @@ def show_income_form():
                         )
                     else:
                         add_income(
-                            date.strftime("%Y-%m-%d"),
+                            income_date.strftime("%Y-%m-%d"),  # Corrigido para income_date
                             type_income,
                             description,
                             value,
@@ -1283,9 +1283,9 @@ def show_reports():
     col1, col2 = st.columns(2)
     
     with col1:
-        start_date = st.date_input("Data inicial", value=date.today().replace(day=1))
+        start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))  # Corrigido para dt_date
     with col2:
-        end_date = st.date_input("Data final", value=date.today())
+        end_date = st.date_input("Data final", value=dt_date.today())  # Corrigido para dt_date
     
     # Filtrar dados
     filtered_expenses = []
