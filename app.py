@@ -145,15 +145,19 @@ def create_user():
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
     
-    # APENAS verificar/criar usuário admin
-    c.execute('SELECT * FROM userstable WHERE username = "admin"')
-    if not c.fetchone():
-        # Criar usuário admin padrão
-        c.execute('INSERT INTO userstable(username, password, nome_completo, data_cadastro) VALUES (?, ?, ?, ?)', 
-                 ('admin', make_hashes('1234'), 'Administrador', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    
-    conn.commit()
-    conn.close()
+    try:
+        # Verificar se usuário admin já existe
+        c.execute('SELECT * FROM userstable WHERE username = "admin"')
+        if not c.fetchone():
+            # Criar usuário admin padrão se não existir
+            c.execute('INSERT INTO userstable(username, password, nome_completo, data_cadastro) VALUES (?, ?, ?, ?)', 
+                     ('admin', make_hashes('1234'), 'Administrador', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+    except Exception as e:
+        # Se houver erro, as tabelas serão criadas na próxima execução
+        print(f"Erro ao criar usuário admin: {e}")
+    finally:
+        conn.close()
 
 def add_user(username, password, nome_completo, cpf_cnpj, tipo_pessoa):
     conn = sqlite3.connect('finance.db')
@@ -910,11 +914,10 @@ def import_from_spreadsheet(file, user_id, is_income=False):
 
 # Interface principal da aplicação
 def main():
-    # Inicializar banco
-    create_user()
-    create_tables()
-    check_and_update_tables()  # Verificar e atualizar estrutura das tabelas
-    
+    # Inicializar banco - CORREÇÃO DA ORDEM
+    create_tables()  # Primeiro criar as tabelas
+    check_and_update_tables()  # Verificar e atualizar estrutura
+    create_user()    # Depois criar/verificar usuário admin
     
     # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
@@ -941,8 +944,7 @@ def main():
             show_complete_registration_page()
         else:
             show_main_app()
-            
-
+ 
 # Página de login
 def show_login_page():
     # Limpar qualquer conteúdo anterior
