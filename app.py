@@ -1757,13 +1757,13 @@ def incomes_page():
     contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
 
     if contrib_tipo != "Não informar":
-    col3, col4 = st.columns(2)
-    with col3:
-        # Buscar CPF/CNPJ cadastrados para autocompletar
-        cpf_cnpj_cadastrados = get_all_cpf_cnpj()
-        opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
+        col3, col4 = st.columns(2)
+            with col3:
+            # Buscar CPF/CNPJ cadastrados para autocompletar
+            cpf_cnpj_cadastrados = get_all_cpf_cnpj()
+            opcoes_cpf_cnpj = list(cpf_cnpj_cadastrados.keys())
         
-        if contrib_tipo == "Física":
+            if contrib_tipo == "Física":
             cpf_selecionado = st.selectbox("CPF do Contribuinte", 
                                          [""] + opcoes_cpf_cnpj,
                                          format_func=lambda x: f"{format_cpf(x)} - {cpf_cnpj_cadastrados.get(x, '')}" if x else "Selecione ou digite novo")
