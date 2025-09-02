@@ -851,6 +851,7 @@ def main():
     # Inicializar banco
     create_user()
     create_tables()
+    clear_cache()
     
     # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
@@ -863,17 +864,18 @@ def main():
         st.session_state.is_admin = False
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
+    if 'initialized' not in st.session_state:
+        st.session_state.initialized = True
     
-    # Se acabou de fazer login, forçar recarregamento
-    if st.session_state.get('just_logged_in', False):
-        st.session_state.just_logged_in = False
-        st.markdown("<script>window.location.reload(true)</script>", unsafe_allow_html=True)
-        return
+    # Limpar qualquer conteúdo residual
+    st.empty()
     
-    # Navegação principal
+    # Navegação principal baseada no estado de login
     if not st.session_state.logged_in:
+        # Mostrar APENAS a página de login
         st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
         login_page()
+        return  # IMPORTANTE: sair da função após mostrar login
    
     else:
         # VERIFICAR SE PRECISA COMPLETAR CADASTRO
@@ -882,7 +884,10 @@ def main():
         
         if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
             complete_registration_page()
-            return
+            return  # Sair após mostrar página de cadastro
+        
+        # Limpar sidebar antes de mostrar o menu
+        st.sidebar.empty()
         
         # MOSTRAR MENU E PÁGINAS (SEM TÍTULO AQUI, CADA PÁGINA TEM SEU PRÓPRIO)
         if st.session_state.is_admin:
@@ -891,6 +896,9 @@ def main():
             menu = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
             
         choice = st.sidebar.selectbox("Navegação", menu)
+        
+        # Limpar conteúdo principal antes de mostrar a página selecionada
+        st.empty()
         
         # Exibir página selecionada
         if choice == "Dashboard":
@@ -915,16 +923,24 @@ def main():
             st.session_state.username = ""
             st.session_state.is_admin = False
             st.session_state.user_info = None
-            rerun()
+            st.session_state.initialized = False
+            st.rerun()
 
 # Página de login - CORRIGIDA
 def login_page():
+    # Limpar qualquer conteúdo anterior
+    st.empty()
+    
     st.header("Login")
     
     username = st.text_input("Usuário")
     password = st.text_input("Senha", type="password")
     
     if st.button("Entrar"):
+        if not username or not password:
+            st.error("Por favor, preencha todos os campos.")
+            return
+            
         hashed_pswd = make_hashes(password)
         
         # Verificar credenciais
@@ -942,8 +958,8 @@ def login_page():
                 st.session_state.user_info = get_user_info(username)
                 st.success("Login realizado com sucesso!")
                 
-                # Forçar recarregamento completo da página
-                st.markdown("<script>window.location.reload(true)</script>", unsafe_allow_html=True)
+                # Forçar recarregamento completo
+                st.rerun()
                 
             else:
                 st.error("Usuário ou senha incorretos")
@@ -958,6 +974,12 @@ def login_page():
 
 # Página de completar cadastro
 def complete_registration_page():
+    if not st.session_state.logged_in:
+        return
+    
+    # Limpar conteúdo anterior
+    st.empty()
+    
     st.header("📝 Completar Cadastro")
     
     with st.form("complete_registration"):
@@ -989,7 +1011,7 @@ def complete_registration_page():
                 update_user_info(st.session_state.username, nome_completo, cpf_cnpj_clean, tipo_pessoa)
                 st.session_state.user_info = (nome_completo, cpf_cnpj_clean, tipo_pessoa)
                 st.success("Cadastro completado com sucesso!")
-                rerun()
+                st.rerun()
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
 
@@ -1037,6 +1059,9 @@ def import_data_page():
 
 # Página de administração
 def admin_page():
+    if not st.session_state.logged_in or not st.session_state.is_admin:
+        return
+        
     st.header("👨‍💼 Painel de Administração")
     
     tab1, tab2 = st.tabs(["Gerenciar Usuários", "Estatísticas do Sistema"])
@@ -1521,6 +1546,9 @@ def reports_page():
 
 # Página de receitas - CORRIGIDA com autocompletar
 def incomes_page():
+    if not st.session_state.logged_in:
+        return
+        
     st.header("💵 Gestão de Receitas")
     
     # Formulário para adicionar receita
@@ -1707,6 +1735,9 @@ if contrib_tipo != "Não informar":
 
 # Página de despesas - CORRIGIDA com autocompletar
 def expenses_page():
+     if not st.session_state.logged_in:
+        return
+        
     st.header("💸 Gestão de Despesas")
     
     # Formulário para adicionar despesa
@@ -1965,6 +1996,15 @@ def dashboard_page():
             st.info("Nenhuma transação recente.")
     else:
         st.info("Adicione algumas transações para ver estatísticas detalhadas.")
+
+def clear_cache():
+    """Limpa o cache do Streamlit para evitar problemas de renderização"""
+    try:
+        # Limpa todos os caches
+        st.cache_data.clear()
+        st.cache_resource.clear()
+    except:
+        pass
 
 # Executar aplicação
 if __name__ == "__main__":
