@@ -772,7 +772,6 @@ def login_page():
     if st.button("Entrar"):
         hashed_pswd = make_hashes(password)
         
-        # Verificar credenciais
         conn = sqlite3.connect('finance.db')
         c = conn.cursor()
         try:
@@ -783,19 +782,14 @@ def login_page():
             if result:
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.session_state.is_admin = (username == "admin")
-                st.session_state.user_info = get_user_info(username)
                 st.success("Login realizado com sucesso!")
                 
-                # Forçar recarregamento completo da página
-                st.markdown("<script>window.location.reload(true)</script>", unsafe_allow_html=True)
-                
-            else:
-                st.error("Usuário ou senha incorretos")
-                
-        except sqlite3.OperationalError:
-            conn.close()
-            st.error("Erro no banco de dados. Tente novamente.")
+                # Redirecionar usando JavaScript
+                st.markdown("""
+                    <script>
+                        window.location.href = window.location.href;
+                    </script>
+                """, unsafe_allow_html=True)
 
 # Página de completar cadastro
 def complete_registration_page():
