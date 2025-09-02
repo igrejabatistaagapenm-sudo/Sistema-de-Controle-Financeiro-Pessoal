@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime, date as dt_date
+from datetime import datetime, date as dt_date, date
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -23,7 +23,7 @@ def format_date_to_br(date_obj):
     """Converte objeto date para string no formato dd/mm/aaaa"""
     if isinstance(date_obj, dt_date):
         return date_obj.strftime("%d/%m/%Y")
-    return date_obj
+        return date_obj
 
 def format_date_to_db(date_str):
     """Converte string no formato dd/mm/aaaa para aaaa-mm-dd (formato do banco)"""
@@ -985,17 +985,17 @@ def show_login_page():
                     st.warning("Por favor, preencha todos os campos")
         
         # Link para criar conta
-        st.markdown("---")
-        if st.button("Criar nova conta"):
-            st.session_state.page = "Criar Conta"
-            st.rerun()
+        #st.markdown("---")
+        #if st.button("Criar nova conta"):
+            #st.session_state.page = "Criar Conta"
+            #st.rerun()
         
         # Informações de acesso de demonstração
-        st.info("""
-        **Acesso de demonstração:**
-        - Usuário: admin
-        - Senha: 1234
-        """)
+        #st.info("""
+        #**Acesso de demonstração:**
+        #- Usuário: admin
+        #- Senha: 1234
+        #""")
 
 # Página de registro
 def show_complete_registration_page():
@@ -1310,9 +1310,9 @@ def show_dashboard():
     col1, col2 = st.columns(2)
     
     with col1:
-        start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))  # Corrigido para dt_date
+        start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))
     with col2:
-        end_date = st.date_input("Data final", value=dt_date.today())  # Corrigido para dt_date
+        end_date = st.date_input("Data final", value=dt_date.today())
     
     # Aplicar filtros
     if not expense_df.empty:
@@ -1350,37 +1350,56 @@ def show_dashboard():
         else:
             st.info("Nenhuma receita registrada no período selecionado.")
     
-    # Tabela de últimas transações
-    st.subheader("Últimas Transações")
+st.info("Nenhuma transação registrada.")
+# Funções para limpar dados
+def clear_user_data(username):
+    """Limpa todos os dados de um usuário específico"""
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
     
-    # Combinar despesas e receitas
-    all_transactions = []
-    
-    for expense in expenses[-10:]:
-    all_transactions.append({
-        'Data': format_brazilian_date(expense[1]),  # ← Adicione formatação aqui
-        'Tipo': 'Despesa',
-        'Descrição': expense[2],
-        'Categoria': expense[4],
-        'Valor': -expense[3]
-    })
+    try:
+        # Limpar despesas do usuário
+        c.execute('DELETE FROM expenses WHERE user_id = ?', (username,))
+        
+        # Limpar receitas do usuário
+        c.execute('DELETE FROM incomes WHERE user_id = ?', (username,))
+        
+        conn.commit()
+        return True, "Dados limpos com sucesso!"
+    except Exception as e:
+        conn.rollback()
+        return False, f"Erro ao limpar dados: {str(e)}"
+    finally:
+        conn.close()
 
-    for income in incomes[-10:]:
-    all_transactions.append({
-        'Data': format_brazilian_date(income[1]),  # ← Adicione formatação aqui
-        'Tipo': 'Receita',
-        'Descrição': income[3],
-        'Categoria': income[2],
-        'Valor': income[4]
-    })
+def delete_user_completely(username):
+    """Deleta um usuário e todos os seus dados (apenas para admin)"""
+    if username == "admin":
+        return False, "Não é possível deletar o usuário administrador."
     
-    # Ordenar por data (mais recente primeiro)
-    if all_transactions:
-        all_transactions.sort(key=lambda x: datetime.strptime(x['Data'], '%d/%m/%Y'), reverse=True)
-        transactions_df = pd.DataFrame(all_transactions[:10])  # Mostrar apenas as 10 mais recentes
-        st.dataframe(transactions_df, use_container_width=True)
-    else:
-        st.info("Nenhuma transação registrada.")
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    
+    try:
+        # Iniciar transação
+        c.execute('BEGIN TRANSACTION')
+        
+        # Limpar despesas do usuário
+        c.execute('DELETE FROM expenses WHERE user_id = ?', (username,))
+        
+        # Limpar receitas do usuário
+        c.execute('DELETE FROM incomes WHERE user_id = ?', (username,))
+        
+        # Deletar o usuário
+        c.execute('DELETE FROM userstable WHERE username = ?', (username,))
+        
+        conn.commit()
+        return True, f"Usuário {username} e todos os seus dados foram deletados com sucesso!"
+    except Exception as e:
+        conn.rollback()
+        return False, f"Erro ao deletar usuário: {str(e)}"
+    finally:
+        conn.close()
 
 # Relatórios
 def show_reports():
@@ -1395,9 +1414,9 @@ def show_reports():
     col1, col2 = st.columns(2)
     
     with col1:
-        start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))  # Corrigido para dt_date
+        start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))
     with col2:
-        end_date = st.date_input("Data final", value=dt_date.today())  # Corrigido para dt_date
+        end_date = st.date_input("Data final", value=dt_date.today())
     
     # Filtrar dados
     filtered_expenses = []
@@ -1440,14 +1459,38 @@ def show_reports():
                 'Valor': expense[3],
                 'Categoria': expense[4],
                 'CPF/CNPJ': cpf_cnpj,
-                'Tipo Pessoa': tipo_pessoa
+                'Tipo Pessoa': tipo_pessoa,
+                'Ações': expense[0]  # ID para ações
             })
         
         expense_df = pd.DataFrame(expense_data)
-        st.dataframe(expense_df, use_container_width=True, hide_index=True)
+        
+        # Adicionar botões de delete
+        for index, row in expense_df.iterrows():
+            col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1, 2, 1, 1, 2, 2, 1, 1])
+            with col1:
+                st.write(row['ID'])
+            with col2:
+                st.write(row['Origem'])
+            with col3:
+                st.write(row['Data'])
+            with col4:
+                st.write(f"R$ {row['Valor']:,.2f}")
+            with col5:
+                st.write(row['Categoria'])
+            with col6:
+                st.write(row['CPF/CNPJ'] or 'N/A')
+            with col7:
+                st.write(row['Tipo Pessoa'] or 'N/A')
+            with col8:
+                if st.button("🗑️", key=f"detail_delete_expense_{row['ID']}_{index}"):
+                    delete_expense(row['ID'], st.session_state.username)
+                    st.success(f"Despesa {row['ID']} excluída!")
+                    time.sleep(1)
+                    st.rerun()
     else:
         st.info("Nenhuma despesa no período selecionado.")
-    
+
     # Tabela de receitas
     st.subheader("Receitas Detalhadas")
     if filtered_incomes:
@@ -1464,13 +1507,105 @@ def show_reports():
                 'Descrição': income[3],
                 'Valor': income[4],
                 'CPF/CNPJ': cpf_cnpj,
-                'Tipo Pessoa': tipo_pessoa
+                'Tipo Pessoa': tipo_pessoa,
+                'Ações': income[0]  # ID para ações
             })
         
         income_df = pd.DataFrame(income_data)
-        st.dataframe(income_df, use_container_width=True, hide_index=True)
+        
+        # Adicionar botões de delete
+        for index, row in income_df.iterrows():
+            col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1, 2, 1, 1, 2, 2, 1, 1])
+            with col1:
+                st.write(row['ID'])
+            with col2:
+                st.write(row['Descrição'])
+            with col3:
+                st.write(row['Data'])
+            with col4:
+                st.write(f"R$ {row['Valor']:,.2f}")
+            with col5:
+                st.write(row['Tipo'])
+            with col6:
+                st.write(row['CPF/CNPJ'] or 'N/A')
+            with col7:
+                st.write(row['Tipo Pessoa'] or 'N/A')
+            with col8:
+                if st.button("🗑️", key=f"detail_delete_income_{row['ID']}_{index}"):
+                    delete_income(row['ID'], st.session_state.username)
+                    st.success(f"Receita {row['ID']} excluída!")
+                    time.sleep(1)
+                    st.rerun()
     else:
         st.info("Nenhuma receita no período selecionado.")
+    
+    # Tabela de últimas transações
+    st.subheader("Últimas Transações")
+
+    # Combinar despesas e receitas
+    all_transactions = []
+
+    for expense in expenses[-10:]:  # Últimas 10 despesas
+        all_transactions.append({
+            'ID': expense[0],
+            'Data': format_brazilian_date(expense[1]),
+            'Tipo': 'Despesa',
+            'Descrição': expense[2],
+            'Categoria': expense[4],
+            'Valor': -expense[3],
+            'Tipo_Transacao': 'expense'
+        })
+
+    for income in incomes[-10:]:  # Últimas 10 receitas
+        all_transactions.append({
+            'ID': income[0],
+            'Data': format_brazilian_date(income[1]),
+            'Tipo': 'Receita',
+            'Descrição': income[3],
+            'Categoria': income[2],
+            'Valor': income[4],
+            'Tipo_Transacao': 'income'
+        })
+
+    # Ordenar por data (mais recente primeiro)
+    if all_transactions:
+        # Converter para datetime para ordenação correta
+        def parse_br_date(date_str):
+            try:
+                if isinstance(date_str, str) and len(date_str) == 10 and date_str[2] == '/':
+                    parts = date_str.split('/')
+                    return datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+                return datetime.min
+            except:
+                return datetime.min
+        
+        all_transactions.sort(key=lambda x: parse_br_date(x['Data']), reverse=True)
+        
+        # Exibir transações com botões de delete
+        for i, transaction in enumerate(all_transactions[:10]):
+            col1, col2, col3, col4, col5, col6 = st.columns([2, 3, 2, 2, 2, 1])
+            with col1:
+                st.write(transaction['Data'])
+            with col2:
+                st.write(transaction['Descrição'])
+            with col3:
+                st.write(transaction['Tipo'])
+            with col4:
+                st.write(transaction['Categoria'])
+            with col5:
+                st.write(f"R$ {transaction['Valor']:,.2f}")
+            with col6:
+                # Adicionar índice único para garantir chave única
+                if st.button("🗑️", key=f"recent_delete_{transaction['Tipo_Transacao']}_{transaction['ID']}_{i}"):
+                    if transaction['Tipo_Transacao'] == 'expense':
+                        delete_expense(transaction['ID'], st.session_state.username)
+                    else:
+                        delete_income(transaction['ID'], st.session_state.username)
+                    st.success("Transação excluída!")
+                    time.sleep(1)
+                    st.rerun()
+    else:
+        st.info("Nenhuma transação registrada.")
     
     # Opções de exportação
     st.subheader("Exportar Relatório")
@@ -1483,7 +1618,7 @@ def show_reports():
             st.download_button(
                 label="⬇️ Baixar Arquivo Excel",
                 data=excel_data,
-                file_name=f"relatorio_financeiro_{date.today().strftime('%Y%m%d')}.xlsx",
+                file_name=f"relatorio_financeiro_{dt_date.today().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
     
@@ -1493,7 +1628,7 @@ def show_reports():
             st.download_button(
                 label="⬇️ Baixar Relatório HTML",
                 data=html_content,
-                file_name=f"relatorio_financeiro_{date.today().strftime('%Y%m%d')}.html",
+                file_name=f"relatorio_financeiro_{dt_date.today().strftime('%Y%m%d')}.html",
                 mime="text/html"
             )
     
@@ -1501,102 +1636,6 @@ def show_reports():
         if st.button("📊 Gerar Gráficos"):
             show_charts(filtered_expenses, filtered_incomes)
 
-# Função para mostrar gráficos
-def show_charts(expenses, incomes):
-    st.title("📊 Análise Gráfica")
-    
-    # Converter para DataFrame
-    expense_data = []
-    for expense in expenses:
-        expense_data.append({
-            'Data': expense[1],
-            'Origem': expense[2],
-            'Valor': expense[3],
-            'Categoria': expense[4]
-        })
-    
-    income_data = []
-    for income in incomes:
-        income_data.append({
-            'Data': income[1],
-            'Tipo': income[2],
-            'Descrição': income[3],
-            'Valor': income[4]
-        })
-    
-    expense_df = pd.DataFrame(expense_data) if expense_data else pd.DataFrame()
-    income_df = pd.DataFrame(income_data) if income_data else pd.DataFrame()
-    
-    # Gráfico de evolução temporal
-    if not expense_df.empty or not income_df.empty:
-        st.subheader("Evolução Temporal")
-        
-        # Preparar dados para o gráfico de linha
-        timeline_data = []
-        
-        if not expense_df.empty:
-            expense_df['Data'] = pd.to_datetime(expense_df['Data'])
-            daily_expenses = expense_df.groupby('Data')['Valor'].sum().reset_index()
-            daily_expenses['Tipo'] = 'Despesa'
-            timeline_data.append(daily_expenses)
-        
-        if not income_df.empty:
-            income_df['Data'] = pd.to_datetime(income_df['Data'])
-            daily_incomes = income_df.groupby('Data')['Valor'].sum().reset_index()
-            daily_incomes['Tipo'] = 'Receita'
-            timeline_data.append(daily_incomes)
-        
-        if timeline_data:
-            timeline_df = pd.concat(timeline_data)
-            fig = px.line(timeline_df, x='Data', y='Valor', color='Tipo', 
-                         title='Evolução de Receitas e Despesas ao Longo do Tempo')
-            st.plotly_chart(fig, use_container_width=True)
-    
-    # Gráficos de pizza
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if not expense_df.empty:
-            st.subheader("Distribuição de Despesas por Categoria")
-            expenses_by_category = expense_df.groupby('Categoria')['Valor'].sum().reset_index()
-            fig = px.pie(expenses_by_category, values='Valor', names='Categoria')
-            st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        if not income_df.empty:
-            st.subheader("Distribuição de Receitas por Tipo")
-            incomes_by_type = income_df.groupby('Tipo')['Valor'].sum().reset_index()
-            fig = px.pie(incomes_by_type, values='Valor', names='Tipo')
-            st.plotly_chart(fig, use_container_width=True)
-    
-    # Comparativo mensal
-    if not expense_df.empty or not income_df.empty:
-        st.subheader("Comparativo Mensal")
-        
-        # Preparar dados mensais
-        monthly_data = []
-        
-        if not expense_df.empty:
-            expense_df['Mês'] = expense_df['Data'].dt.to_period('M')
-            monthly_expenses = expense_df.groupby('Mês')['Valor'].sum().reset_index()
-            monthly_expenses['Tipo'] = 'Despesa'
-            monthly_data.append(monthly_expenses)
-        
-        if not income_df.empty:
-            income_df['Mês'] = income_df['Data'].dt.to_period('M')
-            monthly_incomes = income_df.groupby('Mês')['Valor'].sum().reset_index()
-            monthly_incomes['Tipo'] = 'Receita'
-            monthly_data.append(monthly_incomes)
-        
-        if monthly_data:
-            monthly_df = pd.concat(monthly_data)
-            monthly_df['Mês'] = monthly_df['Mês'].astype(str)
-            
-            fig = px.bar(monthly_df, x='Mês', y='Valor', color='Tipo', barmode='group',
-                        title='Comparativo Mensal de Receitas e Despesas')
-            st.plotly_chart(fig, use_container_width=True)
-
-# Configurações
 def show_settings():
     st.title("⚙️ Configurações")
     
@@ -1630,18 +1669,53 @@ def show_settings():
     
     # Importação/Exportação de dados
     st.subheader("Importar/Exportar Dados")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.write("**Importar Dados**")
         
         import_option = st.radio("Tipo de Dados", ["Despesas", "Receitas"])
         
+        # Mostrar instruções de formatação
+        with st.expander("📋 Como formatar a planilha"):
+            if import_option == "Despesas":
+                st.write("""
+                **Formato para Despesas:**
+                - **Data**: DD/MM/AAAA ou AAAA-MM-DD
+                - **Origem**: Texto com a descrição da despesa
+                - **Valor**: Valor numérico (ex: 150.50)
+                - **Categoria**: Alimentação, Transporte, Moradia, Lazer, Saúde, Outros
+                - **CPF** (opcional): 000.000.000-00 (para pessoa física)
+                - **CNPJ** (opcional): 00.000.000/0000-00 (para pessoa jurídica)
+                
+                **Exemplo de planilha:**
+                | Data       | Origem          | Valor  | Categoria   | CPF           |
+                |------------|-----------------|--------|-------------|---------------|
+                | 15/01/2024 | Supermercado    | 250.00 | Alimentação | 123.456.789-00|
+                | 20/01/2024 | Combustível     | 120.00 | Transporte  |               |
+                """)
+            else:
+                st.write("""
+                **Formato para Receitas:**
+                - **Data**: DD/MM/AAAA ou AAAA-MM-DD
+                - **Tipo**: Dízimo, Oferta, Doação, Evento, Outros
+                - **Descrição**: Texto com a descrição da receita
+                - **Valor**: Valor numérico (ex: 500.00)
+                - **CPF** (opcional): 000.000.000-00 (para pessoa física)
+                - **CNPJ** (opcional): 00.000.000/0000-00 (para pessoa jurídica)
+                
+                **Exemplo de planilha:**
+                | Data       | Tipo    | Descrição       | Valor  | CNPJ             |
+                |------------|---------|-----------------|--------|------------------|
+                | 05/01/2024 | Dízimo  | João Silva      | 300.00 | 123.456.789-00   |
+                | 10/01/2024 | Oferta  | Empresa ABC     | 500.00 | 12.345.678/0001-90|
+                """)
+        
         uploaded_file = st.file_uploader("Selecionar arquivo", type=["xlsx", "xls", "csv"])
         
         if uploaded_file:
-            if st.button("Importar Dados"):
+            if st.button("📤 Importar Dados"):
                 with st.spinner("Importando dados..."):
                     success, message = import_from_spreadsheet(
                         uploaded_file, 
@@ -1655,7 +1729,7 @@ def show_settings():
                         st.rerun()
                     else:
                         st.error(message)
-    
+
     with col2:
         st.write("**Exportar Dados**")
         
@@ -1663,23 +1737,78 @@ def show_settings():
         all_expenses = get_expenses(st.session_state.username)
         all_incomes = get_incomes(st.session_state.username)
         
-        if st.button("Exportar Todos os Dados"):
+        if st.button("📥 Exportar Todos os Dados"):
             excel_data = export_to_excel(all_expenses, all_incomes)
             st.download_button(
                 label="⬇️ Baixar Arquivo Excel",
                 data=excel_data,
-                file_name=f"dados_completos_{date.today().strftime('%Y%m%d')}.xlsx",
+                file_name=f"dados_completos_{dt_date.today().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        
+        # Adicionar opção para baixar template
+        if st.button("📋 Baixar Template"):
+            # Criar template vazio
+            if import_option == "Despesas":
+                template_data = {
+                    'Data': ['15/01/2024', '20/01/2024'],
+                    'Origem': ['Supermercado', 'Combustível'],
+                    'Valor': [250.00, 120.00],
+                    'Categoria': ['Alimentação', 'Transporte'],
+                    'CPF': ['123.456.789-00', ''],
+                    'CNPJ': ['', '']
+                }
+            else:
+                template_data = {
+                    'Data': ['05/01/2024', '10/01/2024'],
+                    'Tipo': ['Dízimo', 'Oferta'],
+                    'Descrição': ['João Silva', 'Empresa ABC'],
+                    'Valor': [300.00, 500.00],
+                    'CPF': ['123.456.789-00', ''],
+                    'CNPJ': ['', '12.345.678/0001-90']
+                }
+            
+            template_df = pd.DataFrame(template_data)
+            template_output = io.BytesIO()
+            template_df.to_excel(template_output, index=False, engine='openpyxl')
+            template_output.seek(0)
+            
+            st.download_button(
+                label="⬇️ Baixar Template",
+                data=template_output,
+                file_name=f"template_{'despesas' if import_option == 'Despesas' else 'receitas'}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
     
-    # Limpar dados
-    st.subheader("Limpar Dados")
-    st.warning("⚠️ Esta ação não pode ser desfeita!")
-    
-    if st.button("❌ Limpar Todos os Dados"):
-        # Implementar lógica para limpar dados do usuário atual
-        st.error("Funcionalidade ainda não implementada.")
+    # Limpar dados do usuário atual
+    st.subheader("Limpar Meus Dados")
+    st.warning("⚠️ Esta ação não pode ser desfeita! Todos os seus registros serão permanentemente excluídos.")
 
+    if 'confirm_delete' not in st.session_state:
+        st.session_state.confirm_delete = False
+
+    if st.button("🗑️ Limpar Todos os Meus Dados", type="secondary"):
+        st.session_state.confirm_delete = True
+
+    if st.session_state.confirm_delete:
+        confirm = st.checkbox("Confirmo que desejo excluir TODOS os meus dados permanentemente", key="confirm_checkbox")
+        if confirm:
+            if st.button("✅ CONFIRMAR EXCLUSÃO", type="primary"):
+                with st.spinner("Limpando dados..."):
+                    success, message = clear_user_data(st.session_state.username)
+                    if success:
+                        st.success(message)
+                        st.session_state.confirm_delete = False
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error(message)
+        
+        # Botão para cancelar
+        if st.button("❌ Cancelar"):
+            st.session_state.confirm_delete = False
+            st.rerun()
+                        
 # Gerenciamento de usuários (apenas admin)
 def show_user_management():
     st.title("👥 Gerenciamento de Usuários")
@@ -1772,13 +1901,13 @@ def show_user_management():
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
     
-    # Remover usuário
+    # Remover usuário (apenas remove da tabela de usuários)
     st.subheader("Remover Usuário")
     
     if users:
         user_to_delete = st.selectbox("Selecionar usuário para remover", [user[0] for user in users if user[0] != "admin"])
         
-        if st.button("🗑️ Remover Usuário"):
+        if st.button("🗑️ Remover Usuário (apenas conta)"):
             if user_to_delete != "admin":
                 delete_user(user_to_delete)
                 st.success(f"Usuário {user_to_delete} removido com sucesso!")
@@ -1786,8 +1915,41 @@ def show_user_management():
                 st.rerun()
             else:
                 st.error("Não é possível remover o usuário administrador.")
-    else:
-        st.info("Nenhum usuário para remover.")
+    
+    # Excluir usuário completamente (com todos os dados)
+    st.subheader("🚨 Excluir Usuário Completamente")
+    st.warning("⚠️ Esta ação exclui o usuário e TODOS os seus dados permanentemente!")
+
+    if 'confirm_user_delete' not in st.session_state:
+        st.session_state.confirm_user_delete = False
+
+    if users:
+        user_to_delete_completely = st.selectbox("Selecionar usuário para exclusão completa", 
+                                               [user[0] for user in users if user[0] != "admin"])
+        
+        if st.button("💣 Excluir Usuário e Todos os Dados", type="secondary"):
+            st.session_state.confirm_user_delete = True
+            st.session_state.user_to_delete = user_to_delete_completely
+
+    if st.session_state.confirm_user_delete:
+        confirm = st.checkbox("Confirmo que desejo excluir este usuário e TODOS os seus dados permanentemente", 
+                             key="confirm_user_checkbox")
+        if confirm:
+            if st.button("✅ CONFIRMAR EXCLUSÃO COMPLETA", type="primary"):
+                with st.spinner("Excluindo usuário e dados..."):
+                    success, message = delete_user_completely(st.session_state.user_to_delete)
+                    if success:
+                        st.success(message)
+                        st.session_state.confirm_user_delete = False
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error(message)
+        
+        # Botão para cancelar
+        if st.button("❌ Cancelar Exclusão"):
+            st.session_state.confirm_user_delete = False
+            st.rerun()
 
 # Executar a aplicação
 if __name__ == "__main__":
