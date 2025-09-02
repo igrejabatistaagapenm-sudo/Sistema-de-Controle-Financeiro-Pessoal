@@ -23,7 +23,7 @@ def format_date_to_br(date_obj):
     """Converte objeto date para string no formato dd/mm/aaaa"""
     if isinstance(date_obj, dt_date):
         return date_obj.strftime("%d/%m/%Y")
-        return date_obj
+    return date_obj
 
 def format_date_to_db(date_str):
     """Converte string no formato dd/mm/aaaa para aaaa-mm-dd (formato do banco)"""
@@ -270,13 +270,6 @@ def create_tables():
             tipo_pessoa TEXT
         )
     ''')
-    
-    # VERIFICAR E CRIAR USUÁRIO ADMIN SE NÃO EXISTIR
-    c.execute('SELECT * FROM userstable WHERE username = "admin"')
-    if not c.fetchone():
-        # Criar usuário admin padrão
-        c.execute('INSERT INTO userstable(username, password, nome_completo, data_cadastro) VALUES (?, ?, ?, ?)', 
-                 ('admin', make_hashes('1234'), 'Administrador', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     
     conn.commit()
     conn.close()
@@ -1038,6 +1031,8 @@ def show_complete_registration_page():
 
 def show_expense_form():
     st.title("💸 Registrar Despesa")
+    if 'expense_submitted' not in st.session_state:
+        st.session_state.expense_submitted = False
     
     with st.form("expense_form", clear_on_submit=True):  # Adicionar clear_on_submit=True
         col1, col2 = st.columns(2)
@@ -1070,6 +1065,8 @@ def show_expense_form():
         submitted = st.form_submit_button("Registrar Despesa")
         
         if submitted:
+            st.session_state.expense_submitted = True
+            
             if origin and value > 0:
                 try:
                     # Converter data para formato do banco
@@ -1111,21 +1108,19 @@ def show_expense_form():
                     
                     st.success("Despesa registrada com sucesso!")
                     time.sleep(1)
+                    st.session_state.expense_submitted = False  # Resetar estado
                     st.rerun()
-                except sqlite3.OperationalError as e:
-                    if "no such column" in str(e):
-                        st.error("Erro na estrutura do banco de dados. Atualizando tabelas...")
-                        check_and_update_tables()
-                        st.rerun()
-                    else:
-                        st.error(f"Erro ao registrar despesa: {str(e)}")
                 except Exception as e:
                     st.error(f"Erro ao registrar despesa: {str(e)}")
+                    st.session_state.expense_submitted = False
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
+                st.session_state.expense_submitted = False
 
 def show_income_form():
     st.title("💰 Registrar Receita")
+    if 'income_submitted' not in st.session_state:
+        st.session_state.income_submitted = False
     
     with st.form("income_form", clear_on_submit=True):  # Adicionar clear_on_submit=True
         col1, col2 = st.columns(2)
@@ -1158,6 +1153,7 @@ def show_income_form():
         submitted = st.form_submit_button("Registrar Receita")
         
         if submitted:
+            st.session_state.income_submitted = True
             if description and value > 0:
                 try:
                     # Converter data para formato do banco
@@ -1199,18 +1195,14 @@ def show_income_form():
                     
                     st.success("Receita registrada com sucesso!")
                     time.sleep(1)
+                    st.session_state.income_submitted = False  # Resetar estado
                     st.rerun()
-                except sqlite3.OperationalError as e:
-                    if "no such column" in str(e):
-                        st.error("Erro na estrutura do banco de dados. Atualizando tabelas...")
-                        check_and_update_tables()
-                        st.rerun()
-                    else:
-                        st.error(f"Erro ao registrar receita: {str(e)}")
                 except Exception as e:
                     st.error(f"Erro ao registrar receita: {str(e)}")
+                    st.session_state.income_submitted = False
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
+                st.session_state.income_submitted = False
 
 # Página principal da aplicação
 def show_main_app():
