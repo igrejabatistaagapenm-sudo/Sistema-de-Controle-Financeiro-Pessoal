@@ -851,7 +851,6 @@ def main():
     # Inicializar banco
     create_user()
     create_tables()
-    clear_cache()
     
     # Inicializar estado da sessão
     if 'logged_in' not in st.session_state:
@@ -864,26 +863,24 @@ def main():
         st.session_state.is_admin = False
     if 'user_info' not in st.session_state:
         st.session_state.user_info = None
-    if 'initialized' not in st.session_state:
-        st.session_state.initialized = True
     
-    # Limpar qualquer conteúdo residual
-    st.empty()
+    # Usar container principal para controlar melhor o conteúdo
+    main_container = st.container()
     
-    # Navegação principal baseada no estado de login
-    if not st.session_state.logged_in:
-        # Mostrar APENAS a página de login
-        st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
-        login_page()
-        return  # IMPORTANTE: sair da função após mostrar login
-   
-    else:
-        # VERIFICAR SE PRECISA COMPLETAR CADASTRO
-        if st.session_state.user_info is None:
-            st.session_state.user_info = get_user_info(st.session_state.username)
-        
-        if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
-            complete_registration_page()
+    with main_container:
+        # Navegação principal baseada no estado de login
+        if not st.session_state.logged_in:
+            # Mostrar APENAS a página de login
+            show_login_page()
+        else:
+            # VERIFICAR SE PRECISA COMPLETAR CADASTRO
+            if st.session_state.user_info is None:
+                st.session_state.user_info = get_user_info(st.session_state.username)
+            
+            if st.session_state.user_info and (st.session_state.user_info[0] is None or st.session_state.user_info[0] == ''):
+                show_complete_registration_page()
+            else:
+                show_main_application()
             return  # Sair após mostrar página de cadastro
         
         # Limpar sidebar antes de mostrar o menu
@@ -972,6 +969,131 @@ def login_page():
             if conn:
                 conn.close()
 
+def show_login_page():
+    """Mostra apenas a página de login"""
+    st.title("💰 Sistema de Controle Financeiro - Igreja Batista Ágape")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.header("Login")
+        
+        username = st.text_input("Usuário", key="login_username")
+        password = st.text_input("Senha", type="password", key="login_password")
+        
+        if st.button("Entrar", key="login_button"):
+            if not username or not password:
+                st.error("Por favor, preencha todos os campos.")
+                return
+                
+            hashed_pswd = make_hashes(password)
+            
+            # Verificar credenciais
+            conn = None
+            try:
+                conn = sqlite3.connect('finance.db')
+                c = conn.cursor()
+                c.execute('SELECT * FROM userstable WHERE username =? AND password = ?', (username, hashed_pswd))
+                result = c.fetchall()
+                
+                if result:
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+                    st.session_state.is_admin = (username == "admin")
+                    st.session_state.user_info = get_user_info(username)
+                    st.session_state.page = "Dashboard"
+                    st.rerun()
+                    
+                else:
+                    st.error("Usuário ou senha incorretos")
+                    
+            except sqlite3.OperationalError as e:
+                st.error(f"Erro no banco de dados: {str(e)}")
+            except Exception as e:
+                st.error(f"Erro inesperado: {str(e)}")
+            finally:
+                if conn:
+                    conn.close()
+
+def show_complete_registration_page():
+    """Mostra apenas a página de completar cadastro"""
+    st.header("📝 Completar Cadastro")
+    
+    with st.form("complete_registration"):
+        nome_completo = st.text_input("Nome Completo*", placeholder="Digite seu nome completo")
+        tipo_pessoa = st.radio("Tipo de Pessoa*", ["Física", "Jurídica"])
+        
+        if tipo_pessoa == "Física":
+            cpf = st.text_input("CPF*", placeholder="000.000.000-00")
+            cpf_cnpj = cpf
+        else:
+            cnpj = st.text_input("CNPJ*", placeholder="00.000.000/0000-00")
+            cpf_cnpj = cnpj
+        
+        if st.form_submit_button("Completar Cadastro"):
+            if nome_completo and cpf_cnpj:
+                # Validar CPF/CNPJ
+                cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj)
+                
+                if tipo_pessoa == "Física":
+                    if not validate_cpf(cpf_cnpj_clean):
+                        st.error("CPF inválido. Por favor, verifique o número.")
+                        return
+                else:
+                    if not validate_cnpj(cpf_cnpj_clean):
+                        st.error("CNPJ inválido. Por favor, verifique o número.")
+                        return
+                
+                # Atualizar informações do usuário
+                update_user_info(st.session_state.username, nome_completo, cpf_cnpj_clean, tipo_pessoa)
+                st.session_state.user_info = (nome_completo, cpf_cnpj_clean, tipo_pessoa)
+                st.success("Cadastro completado com sucesso!")
+                st.session_state.page = "Dashboard"
+                st.rerun()
+            else:
+                st.error("Por favor, preencha todos os campos obrigatórios.")
+
+def show_main_application():
+    """Mostra a aplicação principal após login"""
+    # Configurar sidebar
+    with st.sidebar:
+        st.title("🧭 Navegação")
+        
+        if st.session_state.is_admin:
+            menu_options = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Administração", "Importar Dados"]
+        else:
+            menu_options = ["Dashboard", "Despesas", "Receitas", "Relatórios", "Configurações", "Importar Dados"]
+            
+        selection = st.radio("Menu", menu_options, index=menu_options.index(st.session_state.page) if st.session_state.page in menu_options else 0)
+        
+        st.session_state.page = selection
+        
+        st.write("---")
+        if st.button("🚪 Sair", key="logout_button"):
+            st.session_state.logged_in = False
+            st.session_state.username = ""
+            st.session_state.is_admin = False
+            st.session_state.user_info = None
+            st.session_state.page = "Login"
+            st.rerun()
+    
+    # Mostrar página selecionada
+    if st.session_state.page == "Dashboard":
+        dashboard_page()
+    elif st.session_state.page == "Despesas":
+        expenses_page()
+    elif st.session_state.page == "Receitas":
+        incomes_page()
+    elif st.session_state.page == "Relatórios":
+        reports_page()
+    elif st.session_state.page == "Configurações":
+        settings_page()
+    elif st.session_state.page == "Administração":
+        admin_page()
+    elif st.session_state.page == "Importar Dados":
+        import_data_page()
+                
+
 # Página de completar cadastro
 def complete_registration_page():
     if not st.session_state.logged_in:
@@ -1017,6 +1139,8 @@ def complete_registration_page():
 
 # Página de importação de dados
 def import_data_page():
+    if not st.session_state.logged_in:
+        return
     st.header("📤 Importar Dados de Planilha")
     
     st.info("""
@@ -1207,6 +1331,8 @@ def admin_page():
 
 # Página de configurações
 def settings_page():
+    if not st.session_state.logged_in:
+        return
     st.header("⚙️ Configurações")
     
     # Obter informações atuais do usuário
@@ -1287,6 +1413,8 @@ def settings_page():
 
 # Página de relatórios
 def reports_page():
+    if not st.session_state.logged_in:
+        return
     st.header("📊 Relatórios Financeiros")
     
     # Obter dados
@@ -1883,6 +2011,8 @@ def expenses_page():
  
 # Página de dashboard
 def dashboard_page():
+    if not st.session_state.logged_in:
+        return
     st.header("📊 Dashboard Financeiro")
     
     # Obter dados
