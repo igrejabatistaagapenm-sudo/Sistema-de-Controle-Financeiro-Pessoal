@@ -1752,12 +1752,11 @@ def incomes_page():
     else:
         st.info("Nenhuma receita cadastrada.")
 
+    # Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
+    st.subheader("Informações do Contribuinte (Opcional)") #certo
+    contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
 
-# Informações do contribuinte (opcional) - COM AUTOCOMPLETAR
-st.subheader("Informações do Contribuinte (Opcional)") #certo
-contrib_tipo = st.radio("Tipo de Contribuinte", ["Física", "Jurídica", "Não informar"], index=2)
-
-if contrib_tipo != "Não informar":
+    if contrib_tipo != "Não informar":
     col3, col4 = st.columns(2)
     with col3:
         # Buscar CPF/CNPJ cadastrados para autocompletar
@@ -1799,7 +1798,7 @@ if contrib_tipo != "Não informar":
                 contrib_cnpj = st.text_input("CNPJ do Contribuinte", 
                                            placeholder="00.000.000/0000-00")
                 contrib_name = st.text_input("Nome/Razão Social", placeholder="Razão social")
-            contrib_identifier = contrib_cnpj        
+            contrib_identifier = contrib_cnpj    
 
 # Página de despesas - CORRIGIDA com autocompletar
 def expenses_page():
