@@ -1411,12 +1411,11 @@ def show_reports():
     with col2:
         end_date = st.date_input("Data final", value=dt_date.today())
     
-    # Filtrar dados - CORREÇÃO: usar datetime.datetime para evitar conflito
+    # Filtrar dados
     filtered_expenses = []
     for expense in expenses:
         try:
-            # Usar datetime.datetime explicitamente para evitar conflito
-            expense_date = datetime.datetime.strptime(expense[1], "%Y-%m-%d").date()
+            expense_date = datetime.strptime(expense[1], "%Y-%m-%d").date()
             if start_date <= expense_date <= end_date:
                 filtered_expenses.append(expense)
         except (ValueError, TypeError):
@@ -1426,14 +1425,14 @@ def show_reports():
     filtered_incomes = []
     for income in incomes:
         try:
-            # Usar datetime.datetime explicitamente para evitar conflito
-            income_date = datetime.datetime.strptime(income[1], "%Y-%m-%d").date()
+            income_date = datetime.strptime(income[1], "%Y-%m-%d").date()
             if start_date <= income_date <= end_date:
                 filtered_incomes.append(income)
         except (ValueError, TypeError):
             # Se houver erro na conversão da data, pular este registro
-                    
-    # Calcular totais
+            continue
+    
+    # Calcular totais - CORREÇÃO: Esta parte deve estar FORA dos blocos try/except
     total_expenses = sum(expense[3] for expense in filtered_expenses)
     total_income = sum(income[4] for income in filtered_incomes)
     balance = total_income - total_expenses
