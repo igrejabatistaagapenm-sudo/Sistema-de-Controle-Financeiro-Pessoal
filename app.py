@@ -1402,17 +1402,6 @@ def show_reports():
     expenses = get_expenses(st.session_state.username)
     incomes = get_incomes(st.session_state.username)
     
-    # Filtrar dados corretamente uma única vez
-    filtered_expenses = [
-        expense for expense in expenses 
-        if start_date <= datetime.strptime(expense[1], "%Y-%m-%d").date() <= end_date
-    ]
-    
-    filtered_incomes = [
-        income for income in incomes 
-        if start_date <= datetime.strptime(income[1], "%Y-%m-%d").date() <= end_date
-    ]
-    
     # Filtros
     st.subheader("Filtros")
     col1, col2 = st.columns(2)
@@ -1421,7 +1410,29 @@ def show_reports():
         start_date = st.date_input("Data inicial", value=dt_date.today().replace(day=1))
     with col2:
         end_date = st.date_input("Data final", value=dt_date.today())
-        
+    
+    # Filtrar dados - CORREÇÃO: usar datetime.datetime para evitar conflito
+    filtered_expenses = []
+    for expense in expenses:
+        try:
+            # Usar datetime.datetime explicitamente para evitar conflito
+            expense_date = datetime.datetime.strptime(expense[1], "%Y-%m-%d").date()
+            if start_date <= expense_date <= end_date:
+                filtered_expenses.append(expense)
+        except (ValueError, TypeError):
+            # Se houver erro na conversão da data, pular este registro
+            continue
+    
+    filtered_incomes = []
+    for income in incomes:
+        try:
+            # Usar datetime.datetime explicitamente para evitar conflito
+            income_date = datetime.datetime.strptime(income[1], "%Y-%m-%d").date()
+            if start_date <= income_date <= end_date:
+                filtered_incomes.append(income)
+        except (ValueError, TypeError):
+            # Se houver erro na conversão da data, pular este registro
+                    
     # Calcular totais
     total_expenses = sum(expense[3] for expense in filtered_expenses)
     total_income = sum(income[4] for income in filtered_incomes)
