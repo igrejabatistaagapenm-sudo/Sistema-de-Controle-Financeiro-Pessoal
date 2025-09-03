@@ -1031,14 +1031,11 @@ def show_complete_registration_page():
 
 def show_expense_form():
     st.title("💸 Registrar Despesa")
-    if 'expense_submitted' not in st.session_state:
-        st.session_state.expense_submitted = False
     
-    with st.form("expense_form", clear_on_submit=True):  # Adicionar clear_on_submit=True
+    with st.form("expense_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Data no formato brasileiro
             expense_date = st.date_input("Data*", value=dt_date.today(), format="DD/MM/YYYY")
             origin = st.text_input("Origem/Descrição*")
             value = st.number_input("Valor (R$)*", min_value=0.01, step=0.01, format="%.2f")
@@ -1047,7 +1044,6 @@ def show_expense_form():
             category = st.selectbox("Categoria*", 
                                   ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Outros"])
             
-            # Opções para CPF/CNPJ
             tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
             
             if tipo_pessoa != "Não informar":
@@ -1065,14 +1061,10 @@ def show_expense_form():
         submitted = st.form_submit_button("Registrar Despesa")
         
         if submitted:
-            st.session_state.expense_submitted = True
-            
             if origin and value > 0:
                 try:
-                    # Converter data para formato do banco
                     db_date = parse_date_input(expense_date)
                     
-                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
                     if tipo_pessoa == "Não informar":
                         add_expense(
                             db_date,
@@ -1082,7 +1074,6 @@ def show_expense_form():
                             st.session_state.username
                         )
                     else:
-                        # Validar CPF/CNPJ antes de inserir
                         cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None
                         
                         if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
@@ -1107,26 +1098,21 @@ def show_expense_form():
                             )
                     
                     st.success("Despesa registrada com sucesso!")
-                    time.sleep(1)
-                    st.session_state.expense_submitted = False  # Resetar estado
-                    st.rerun()
+                    # REMOVER o time.sleep(1) e st.rerun() - isso causa múltiplas execuções
+                    # Em vez disso, usar st.experimental_rerun() apenas se necessário
+                    
                 except Exception as e:
                     st.error(f"Erro ao registrar despesa: {str(e)}")
-                    st.session_state.expense_submitted = False
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
-                st.session_state.expense_submitted = False
 
 def show_income_form():
     st.title("💰 Registrar Receita")
-    if 'income_submitted' not in st.session_state:
-        st.session_state.income_submitted = False
     
-    with st.form("income_form", clear_on_submit=True):  # Adicionar clear_on_submit=True
+    with st.form("income_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Data no formato brasileiro
             income_date = st.date_input("Data*", value=dt_date.today(), format="DD/MM/YYYY")
             type_income = st.selectbox("Tipo de Receita*", 
                                      ["Dízimo", "Oferta", "Doação", "Evento", "Outros"])
@@ -1135,7 +1121,6 @@ def show_income_form():
         with col2:
             description = st.text_input("Descrição*")
             
-            # Opções para CPF/CNPJ
             tipo_pessoa = st.radio("Tipo de Pessoa", ["Física", "Jurídica", "Não informar"])
             
             if tipo_pessoa != "Não informar":
@@ -1153,13 +1138,10 @@ def show_income_form():
         submitted = st.form_submit_button("Registrar Receita")
         
         if submitted:
-            st.session_state.income_submitted = True
             if description and value > 0:
                 try:
-                    # Converter data para formato do banco
                     db_date = parse_date_input(income_date)
                     
-                    # Se CPF/CNPJ foi fornecido, usar tipo_pessoa correspondente
                     if tipo_pessoa == "Não informar":
                         add_income(
                             db_date,
@@ -1169,7 +1151,6 @@ def show_income_form():
                             st.session_state.username
                         )
                     else:
-                        # Validar CPF/CNPJ antes de inserir
                         cpf_cnpj_clean = re.sub(r'[^0-9]', '', cpf_cnpj) if cpf_cnpj else None
                         
                         if (tipo_pessoa == "Física" and validate_cpf(cpf_cnpj_clean)) or \
@@ -1194,15 +1175,12 @@ def show_income_form():
                             )
                     
                     st.success("Receita registrada com sucesso!")
-                    time.sleep(1)
-                    st.session_state.income_submitted = False  # Resetar estado
-                    st.rerun()
+                    # REMOVER o time.sleep(1) e st.rerun() - isso causa múltiplas execuções
+                    
                 except Exception as e:
                     st.error(f"Erro ao registrar receita: {str(e)}")
-                    st.session_state.income_submitted = False
             else:
                 st.error("Por favor, preencha todos os campos obrigatórios.")
-                st.session_state.income_submitted = False
 
 # Página principal da aplicação
 def show_main_app():
